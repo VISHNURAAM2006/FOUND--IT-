@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import ImageUpload from "@/components/ImageUpload";
 
-export default function ReportFoundPage() {
+export default function ReportLostPage() {
   const { data: session, status } = useSession();
 
   const [category, setCategory] = useState("Electronics");
@@ -15,10 +15,9 @@ export default function ReportFoundPage() {
     model: "",
     color: "",
     location: "",
-    foundDate: new Date().toISOString().split("T")[0],
+    lostDate: new Date().toISOString().split("T")[0],
+    contactPhone: "",
     description: "",
-    hiddenQuestion: "",
-    hiddenAnswer: "",
   });
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
@@ -40,7 +39,7 @@ export default function ReportFoundPage() {
         body: JSON.stringify({
           ...formData,
           category,
-          type: "FOUND",
+          type: "LOST",
           imageUrl,
           userEmail: session?.user?.email || "anonymous",
           userName: session?.user?.name || "Found!t User",
@@ -52,7 +51,7 @@ export default function ReportFoundPage() {
       if (response.ok && data.success) {
         setSubmitSuccess(true);
       } else {
-        setErrorMessage(data.error || "Failed to submit report. Please try again.");
+        setErrorMessage(data.error || "Failed to submit lost item report. Please try again.");
       }
     } catch (err) {
       console.error(err);
@@ -69,10 +68,9 @@ export default function ReportFoundPage() {
       model: "",
       color: "",
       location: "",
-      foundDate: new Date().toISOString().split("T")[0],
+      lostDate: new Date().toISOString().split("T")[0],
+      contactPhone: "",
       description: "",
-      hiddenQuestion: "",
-      hiddenAnswer: "",
     });
     setImageUrl(null);
     setSubmitSuccess(false);
@@ -94,11 +92,11 @@ export default function ReportFoundPage() {
           <div className="text-4xl mb-3">🔒</div>
           <h2 className="text-2xl font-bold text-slate-900 mb-2">Login Required</h2>
           <p className="text-slate-600 mb-6">
-            Please log in with your college Gmail to report a found product.
+            Please log in with your college Gmail to file a lost product report.
           </p>
           <Link
             href="/"
-            className="inline-block px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition"
+            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
           >
             Go to Login Page
           </Link>
@@ -118,8 +116,8 @@ export default function ReportFoundPage() {
           >
             <span>←</span> Back to Dashboard
           </Link>
-          <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-3 py-1 rounded-full">
-            Reporting as: {session.user?.email}
+          <span className="text-xs bg-blue-100 text-blue-800 font-semibold px-3 py-1 rounded-full">
+            Filing as: {session.user?.email}
           </span>
         </div>
 
@@ -127,15 +125,15 @@ export default function ReportFoundPage() {
         <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6 sm:p-10">
           <div className="border-b border-slate-100 pb-5 mb-8">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl font-bold">
-                🎁
+              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl font-bold">
+                🔍
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-                  Report a Found Product
+                  File a Lost Product Report
                 </h1>
                 <p className="text-sm text-slate-500 mt-1">
-                  Help return a lost item to its rightful owner on campus.
+                  Submit details of your lost belonging so our campus database and community can locate it.
                 </p>
               </div>
             </div>
@@ -143,28 +141,28 @@ export default function ReportFoundPage() {
 
           {/* Success Banner */}
           {submitSuccess && (
-            <div className="mb-8 p-6 bg-emerald-50 border border-emerald-300 rounded-2xl text-center">
-              <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl font-bold">
+            <div className="mb-8 p-6 bg-blue-50 border border-blue-300 rounded-2xl text-center">
+              <div className="w-12 h-12 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl font-bold">
                 ✓
               </div>
-              <h3 className="text-xl font-bold text-emerald-900 mb-1">
-                Found Product Submitted Successfully!
+              <h3 className="text-xl font-bold text-blue-900 mb-1">
+                Lost Product Report Filed Successfully!
               </h3>
-              <p className="text-sm text-emerald-700 mb-6">
-                Your report has been saved to the database. When someone files a matching lost report, the campus system will connect you.
+              <p className="text-sm text-blue-700 mb-6">
+                Your report is now active in the database. When someone submits a matching found item, you will be notified.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
                   href="/"
-                  className="px-6 py-2.5 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition"
+                  className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition"
                 >
                   Return to Dashboard
                 </Link>
                 <button
                   onClick={handleReset}
-                  className="px-6 py-2.5 bg-white text-emerald-700 border border-emerald-300 font-semibold rounded-xl hover:bg-emerald-50 transition"
+                  className="px-6 py-2.5 bg-white text-blue-700 border border-blue-300 font-semibold rounded-xl hover:bg-blue-50 transition"
                 >
-                  Report Another Item
+                  File Another Report
                 </button>
               </div>
             </div>
@@ -188,14 +186,14 @@ export default function ReportFoundPage() {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 >
-                  <option value="Electronics">Electronics (Phone, Laptop, Charger, Earbuds)</option>
+                  <option value="Electronics">Electronics (Phone, Laptop, Headphones, Charger)</option>
                   <option value="Bags/Wallets">Bags, Wallets & Backpacks</option>
                   <option value="Jewelry">Jewelry & Watches</option>
                   <option value="Documents">College ID Cards, Hall Tickets & Passports</option>
                   <option value="Keys/Cards">Keys, ATM Cards & Metro Cards</option>
-                  <option value="Books/Notes">Books, Notebooks & Calculators</option>
+                  <option value="Books/Notes">Books, Notebooks & Scientific Calculators</option>
                   <option value="Other">Other Items</option>
                 </select>
               </div>
@@ -208,10 +206,10 @@ export default function ReportFoundPage() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Blue HP Pavilion Laptop with charger"
+                  placeholder="e.g. Space Grey MacBook Air M2, Black Leather Fossil Wallet"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 />
               </div>
 
@@ -223,126 +221,103 @@ export default function ReportFoundPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Apple, Dell, Titan, Nike"
+                    placeholder="e.g. Apple, Samsung, Lenovo, Wildcraft"
                     value={formData.brand}
                     onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-1.5">
-                    Model or Version
+                    Model or Series
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. iPhone 13, Inspiron 15"
+                    placeholder="e.g. Galaxy S23, ThinkPad T14"
                     value={formData.model}
                     onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                   />
                 </div>
               </div>
 
-              {/* Color & Found Date */}
+              {/* Color & Lost Date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-1.5">
-                    Primary Color / Appearance
+                    Color & Distinguishing Features
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Matte Black with silver trim"
+                    placeholder="e.g. Midnight Blue with NASA sticker on corner"
                     value={formData.color}
                     onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-1.5">
-                    Date Found
+                    Date Lost
                   </label>
                   <input
                     type="date"
-                    value={formData.foundDate}
-                    onChange={(e) => setFormData({ ...formData, foundDate: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm"
+                    value={formData.lostDate}
+                    onChange={(e) => setFormData({ ...formData, lostDate: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                   />
                 </div>
               </div>
 
-              {/* Location Found */}
+              {/* Location Lost */}
               <div>
                 <label className="block text-sm font-semibold text-slate-800 mb-1.5">
-                  Location Found on Campus <span className="text-red-500">*</span>
+                  Location Last Seen <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Central Library 2nd Floor, Table #14"
+                  placeholder="e.g. Lecture Hall 402, Basketball Court, Cafeteria"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 />
               </div>
 
               {/* Image Upload Feature */}
               <ImageUpload
-                label="Provide Image of Found Product"
-                sublabel="Attach a clear photo of the found item. This helps confirm ownership."
+                label="Provide Image of Lost Product"
+                sublabel="Upload a previous photo of your item or a reference picture from the internet showing the exact model."
                 value={imageUrl}
                 onChange={(url) => setImageUrl(url)}
               />
 
-              {/* Security Verification Box */}
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-3">
-                <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">
-                  <span>🛡️</span>
-                  <span>Security Verification (Hidden Detail)</span>
-                </div>
-                <p className="text-xs text-amber-800 leading-relaxed">
-                  Only the real owner will know this detail (e.g., lock screen wallpaper, sticker on back, internal card count). The answer remains confidential and will be used to verify the claimant.
-                </p>
-                <div>
-                  <label className="block text-xs font-semibold text-amber-900 mb-1">
-                    Secret Question
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. What picture is on the phone wallpaper or laptop sticker?"
-                    value={formData.hiddenQuestion}
-                    onChange={(e) =>
-                      setFormData({ ...formData, hiddenQuestion: e.target.value })
-                    }
-                    className="w-full px-4 py-2 rounded-xl border border-amber-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-amber-900 mb-1">
-                    Correct Secret Answer
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Golden retriever puppy wallpaper"
-                    value={formData.hiddenAnswer}
-                    onChange={(e) =>
-                      setFormData({ ...formData, hiddenAnswer: e.target.value })
-                    }
-                    className="w-full px-4 py-2 rounded-xl border border-amber-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 shadow-sm"
-                  />
-                </div>
+              {/* Contact Phone */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-800 mb-1.5">
+                  Contact Phone / WhatsApp Number
+                </label>
+                <input
+                  type="tel"
+                  placeholder="e.g. +91 98765 43210 (so finder or campus security can reach you)"
+                  value={formData.contactPhone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, contactPhone: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                />
               </div>
 
               {/* Description */}
               <div>
                 <label className="block text-sm font-semibold text-slate-800 mb-1.5">
-                  Additional Notes / Details
+                  Detailed Description & Contents
                 </label>
                 <textarea
-                  rows={3}
-                  placeholder="Any other details about how or where it was found, custody details, etc."
+                  rows={4}
+                  placeholder="Describe any specific contents (e.g. cards inside wallet, keychain attached, marks, scratches, exact circumstances of loss)."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 />
               </div>
 
@@ -352,17 +327,17 @@ export default function ReportFoundPage() {
                 disabled={isSubmitting}
                 className={`w-full py-3.5 px-6 rounded-xl font-bold text-white shadow-md transition flex items-center justify-center gap-2 ${
                   isSubmitting
-                    ? "bg-emerald-400 cursor-not-allowed"
-                    : "bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99]"
+                    ? "bg-blue-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 active:scale-[0.99]"
                 }`}
               >
                 {isSubmitting ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Saving to Database...</span>
+                    <span>Filing Report to Database...</span>
                   </>
                 ) : (
-                  <span>Submit Found Report</span>
+                  <span>Submit Lost Item Report</span>
                 )}
               </button>
             </form>
