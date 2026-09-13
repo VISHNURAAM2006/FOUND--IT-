@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import VerificationModal from "@/components/VerificationModal";
-import ChatWindow from "@/components/ChatWindow";
+import ProductChatWorkspace from "@/components/ProductChatWorkspace";
 
 interface Report {
   _id: string;
@@ -15,12 +15,13 @@ interface Report {
   brand?: string;
   model?: string;
   color?: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
   status: string;
   userEmail: string;
   userName?: string;
   hiddenQuestion?: string;
   description?: string;
+  foundDate?: string;
   createdAt: string;
   isLocked?: boolean;
   isUnlocked?: boolean;
@@ -39,6 +40,7 @@ interface Chat {
   status: string;
   lastMessage?: string;
   lastMessageAt?: string;
+  report?: Report;
 }
 
 // ─── Confirmation Delete Dialog ────────────────────────────────────────────────
@@ -124,10 +126,10 @@ function ReportCard({
           <div className="w-full h-36 rounded-xl mb-3 bg-slate-100 border border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 p-3 text-center">
             <span className="text-2xl mb-1">🔒</span>
             <span className="text-xs font-semibold text-slate-600">
-              Details &amp; Photo Locked
+              Details Locked
             </span>
             <span className="text-[10px] text-slate-400">
-              Pass ML verification (&ge; 80%) to view
+              Answer secret question to unlock
             </span>
           </div>
         ) : null}
@@ -215,21 +217,21 @@ function ReportCard({
           {isLockedFound && onVerify && (
             <button
               onClick={() => onVerify(report)}
-              className="w-full text-xs font-bold px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition shadow-xs flex items-center justify-center gap-1.5"
+              className="w-full text-xs font-bold px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition shadow-xs flex items-center justify-center gap-1.5"
             >
-              <span>🛡️</span>
-              <span>Answer Question &amp; Unlock (AI)</span>
+              <span>🔑</span>
+              <span>Answer Question &amp; Unlock</span>
             </button>
           )}
 
-          {/* Unlocked -> Start / Open Chat */}
+          {/* Unlocked -> Open Side-by-Side Product Details & Chat */}
           {!isOwner && report.type === "FOUND" && !isLockedFound && onOpenChat && (
             <button
               onClick={() => onOpenChat(report)}
-              className="w-full text-xs font-bold px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition shadow-xs flex items-center justify-center gap-1.5"
+              className="w-full text-xs font-bold px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition shadow-xs flex items-center justify-center gap-1.5"
             >
               <span>💬</span>
-              <span>Chat with Founder</span>
+              <span>View Details &amp; Chat</span>
             </button>
           )}
         </div>
@@ -257,7 +259,7 @@ export default function HomePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  // Active Modals
+  // Active Modals & Workspaces
   const [verifyingReport, setVerifyingReport] = useState<Report | null>(null);
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
 
@@ -369,7 +371,7 @@ export default function HomePage() {
     }
   };
 
-  // ── Handle Starting / Opening Chat with Founder ─────────────────────────────
+  // ── Handle Starting / Opening Side-by-Side Product Chat Workspace ────────────
   const handleStartChatWithFounder = async (
     report: Report,
     founderEmailOverride?: string,
@@ -399,7 +401,7 @@ export default function HomePage() {
       const data = await res.json();
       if (data.success && data.chat) {
         setVerifyingReport(null); // Close verification modal
-        setActiveChat(data.chat); // Open chat window
+        setActiveChat({ ...data.chat, report }); // Open attached side-by-side workspace
         fetchUserChats(); // Refresh chat list
       } else {
         showToast(data.error || "Failed to initialize chat.", "error");
@@ -459,15 +461,9 @@ export default function HomePage() {
               </span>
             </div>
             <div className="flex items-center gap-2.5">
-              <span className="text-amber-600 font-bold text-base">🤖</span>
-              <span>
-                <strong>ML Cosine Similarity</strong> ensures authentic claims
-              </span>
-            </div>
-            <div className="flex items-center gap-2.5">
               <span className="text-violet-600 font-bold text-base">💬</span>
               <span>
-                <strong>Secure Campus Chat</strong> between finder and loser
+                <strong>Direct Handover Chat</strong> with attached product details
               </span>
             </div>
           </div>
@@ -512,7 +508,6 @@ export default function HomePage() {
             handleStartChatWithFounder(rep, fEmail, fName)
           }
           onUnlocked={(updated) => {
-            // Update local inventory state
             setFoundInventory((prev) =>
               prev.map((r) => (r._id === updated._id ? updated : r))
             );
@@ -520,12 +515,13 @@ export default function HomePage() {
         />
       )}
 
-      {/* Active Chat Window Modal */}
+      {/* Side-by-Side Product Details & Live Chat Workspace */}
       {activeChat && session.user?.email && (
-        <ChatWindow
+        <ProductChatWorkspace
           chat={activeChat}
           currentUserEmail={session.user.email}
           currentUserName={session.user.name || "Student"}
+          initialReport={activeChat.report}
           onClose={() => setActiveChat(null)}
         />
       )}
@@ -620,7 +616,7 @@ export default function HomePage() {
                 Report Lost Product
               </h2>
               <p className="text-slate-600 text-sm leading-relaxed">
-                File a lost item complaint with details, campus location, contact info, and a photo to unlock found inventory.
+                File a lost item complaint with details, campus location, contact info, and a photo.
               </p>
             </div>
             <div className="flex items-center gap-2 font-bold text-blue-600 text-sm mt-5 group-hover:translate-x-1 transition-transform">
@@ -645,7 +641,7 @@ export default function HomePage() {
                 Report Found Product
               </h2>
               <p className="text-slate-600 text-sm leading-relaxed">
-                Found something on campus? Post a photo, location, and a confidential security question for AI verification.
+                Found something on campus? Post a photo, location, and a confidential security question.
               </p>
             </div>
             <div className="flex items-center gap-2 font-bold text-emerald-600 text-sm mt-5 group-hover:translate-x-1 transition-transform">
@@ -815,30 +811,22 @@ export default function HomePage() {
                     </p>
                   </div>
                 ) : (
-                  <>
-                    <div className="mb-5 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 font-medium flex items-center gap-2.5">
-                      <span className="text-lg">🤖</span>
-                      <div>
-                        <strong>ML Security Protection Active:</strong> To claim any item below, you must answer the secret verification question. Our Cosine Similarity engine requires <strong>&ge; 80% semantic match</strong> to unlock details and start a chat with the founder.
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {foundInventory.map((report) => (
-                        <ReportCard
-                          key={report._id}
-                          report={report}
-                          isOwner={report.userEmail === session.user?.email}
-                          onDelete={
-                            report.userEmail === session.user?.email
-                              ? setDeleteTarget
-                              : undefined
-                          }
-                          onVerify={(rep) => setVerifyingReport(rep)}
-                          onOpenChat={(rep) => handleStartChatWithFounder(rep)}
-                        />
-                      ))}
-                    </div>
-                  </>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {foundInventory.map((report) => (
+                      <ReportCard
+                        key={report._id}
+                        report={report}
+                        isOwner={report.userEmail === session.user?.email}
+                        onDelete={
+                          report.userEmail === session.user?.email
+                            ? setDeleteTarget
+                            : undefined
+                        }
+                        onVerify={(rep) => setVerifyingReport(rep)}
+                        onOpenChat={(rep) => handleStartChatWithFounder(rep)}
+                      />
+                    ))}
+                  </div>
                 )}
               </>
             )}
@@ -857,7 +845,7 @@ export default function HomePage() {
                       No active conversations yet
                     </p>
                     <p className="text-sm text-slate-500 max-w-sm mx-auto mb-4">
-                      When an item ownership is verified through the &ge; 80% ML Cosine Similarity check, direct chat opens here.
+                      When item ownership is confirmed, your direct communication and handover workspace opens here.
                     </p>
                   </div>
                 ) : (
@@ -905,7 +893,7 @@ export default function HomePage() {
                           <div className="mt-4 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
                             <span>Status: {chat.status}</span>
                             <span className="font-bold text-violet-600 hover:underline">
-                              Open Chat →
+                              Open Details &amp; Chat →
                             </span>
                           </div>
                         </div>

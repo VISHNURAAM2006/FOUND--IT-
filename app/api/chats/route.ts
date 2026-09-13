@@ -17,6 +17,15 @@ export async function GET(request: Request) {
     const client = await clientPromise;
     const db = client.db("foundit_db");
 
+    // Clean up any legacy robotic system messages
+    try {
+      await db.collection("messages").deleteMany({
+        senderEmail: { $in: ["system@foundit.campus", "system@foundit.edu"] },
+      });
+    } catch (e) {
+      console.warn("Error cleaning up system messages:", e);
+    }
+
     // Retrieve chats where user is either founder or claimant
     const chats = await db
       .collection("chats")
@@ -26,7 +35,35 @@ export async function GET(request: Request) {
       .sort({ lastMessageAt: -1 })
       .toArray();
 
-    return NextResponse.json({ success: true, chats });
+    // Enrich chats with the full report details for the side-by-side view
+    const enrichedChats = await Promise.all(
+      chats.map(async (chat) => {
+        try {
+          if (chat.reportId) {
+            let reportObjId: ObjectId | null = null;
+            try {
+              reportObjId = new ObjectId(chat.reportId);
+            } catch {
+              // Ignore invalid ObjectId format
+            }
+
+            const query = reportObjId
+              ? { $or: [{ _id: reportObjId }, { _id: chat.reportId }] }
+              : { _id: chat.reportId };
+
+            const report = await db.collection("reports").findOne(query);
+            if (report) {
+              return { ...chat, report };
+            }
+          }
+        } catch (err) {
+          console.warn("Could not fetch report for chat:", chat._id, err);
+        }
+        return chat;
+      })
+    );
+
+    return NextResponse.json({ success: true, chats: enrichedChats });
   } catch (error: unknown) {
     console.error("Error in GET /api/chats:", error);
     const errorMessage = error instanceof Error ? error.message : "Database error";
@@ -58,6 +95,17 @@ export async function POST(request: Request) {
     const client = await clientPromise;
     const db = client.db("foundit_db");
 
+    // Fetch report to attach details
+    let reportDoc = null;
+    try {
+      let rId: ObjectId | null = null;
+      try {
+        rId = new ObjectId(reportId);
+      } catch {}
+      const q = rId ? { $or: [{ _id: rId }, { _id: reportId }] } : { _id: reportId };
+      reportDoc = await db.collection("reports").findOne(q);
+    } catch {}
+
     // Check if chat already exists for this item and claimant
     const existingChat = await db.collection("chats").findOne({
       reportId: reportId.toString(),
@@ -65,7 +113,10 @@ export async function POST(request: Request) {
     });
 
     if (existingChat) {
-      return NextResponse.json({ success: true, chat: existingChat });
+      return NextResponse.json({
+        success: true,
+        chat: { ...existingChat, report: reportDoc },
+      });
     }
 
     const newChat = {
@@ -78,27 +129,17 @@ export async function POST(request: Request) {
       claimantEmail,
       claimantName: claimantName || "Claimant",
       status: "ACTIVE",
-      lastMessage: "Chat created after Cosine Similarity verification",
+      lastMessage: "Chat started",
       lastMessageAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     const result = await db.collection("chats").insertOne(newChat);
-    const chatId = result.insertedId.toString();
-
-    // Insert welcome system notification message
-    await db.collection("messages").insertOne({
-      chatId,
-      senderEmail: "system@foundit.campus",
-      senderName: "Found!t Campus Security",
-      content: `🛡️ Verified Match (>= 80% Cosine Similarity). You are now connected. Please arrange a safe handover during campus hours in public areas (e.g., Central Library, Admin Block, Student Center).`,
-      createdAt: new Date(),
-    });
 
     return NextResponse.json({
       success: true,
-      chat: { ...newChat, _id: result.insertedId },
+      chat: { ...newChat, _id: result.insertedId, report: reportDoc },
     });
   } catch (error: unknown) {
     console.error("Error in POST /api/chats:", error);

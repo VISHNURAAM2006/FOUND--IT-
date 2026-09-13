@@ -19,9 +19,13 @@ export async function GET(
     const client = await clientPromise;
     const db = client.db("foundit_db");
 
+    // Filter out robotic system messages
     const messages = await db
       .collection("messages")
-      .find({ chatId: id })
+      .find({
+        chatId: id,
+        senderEmail: { $not: /system/i },
+      })
       .sort({ createdAt: 1 })
       .toArray();
 
