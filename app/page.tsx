@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
+import VerificationModal from "@/components/VerificationModal";
+import ChatWindow from "@/components/ChatWindow";
 
 interface Report {
   _id: string;
@@ -17,7 +19,26 @@ interface Report {
   status: string;
   userEmail: string;
   userName?: string;
+  hiddenQuestion?: string;
+  description?: string;
   createdAt: string;
+  isLocked?: boolean;
+  isUnlocked?: boolean;
+}
+
+interface Chat {
+  _id: string;
+  reportId: string;
+  reportTitle: string;
+  reportCategory?: string;
+  reportImageUrl?: string | null;
+  founderEmail: string;
+  founderName: string;
+  claimantEmail: string;
+  claimantName: string;
+  status: string;
+  lastMessage?: string;
+  lastMessageAt?: string;
 }
 
 // ─── Confirmation Delete Dialog ────────────────────────────────────────────────
@@ -78,22 +99,41 @@ function ReportCard({
   report,
   isOwner,
   onDelete,
+  onVerify,
+  onOpenChat,
 }: {
   report: Report;
   isOwner: boolean;
   onDelete?: (report: Report) => void;
+  onVerify?: (report: Report) => void;
+  onOpenChat?: (report: Report) => void;
 }) {
+  const isLockedFound = report.type === "FOUND" && !isOwner && report.isLocked !== false;
+
   return (
     <div className="border border-slate-200 rounded-2xl p-4 bg-white hover:shadow-md transition flex flex-col justify-between">
       <div>
-        {report.imageUrl && (
+        {/* Image Display */}
+        {report.imageUrl && !isLockedFound ? (
           <img
             src={report.imageUrl}
             alt={report.title}
             className="w-full h-36 object-cover rounded-xl mb-3 border border-slate-200"
           />
-        )}
-        <div className="flex items-center gap-2 mb-2">
+        ) : isLockedFound ? (
+          <div className="w-full h-36 rounded-xl mb-3 bg-slate-100 border border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 p-3 text-center">
+            <span className="text-2xl mb-1">🔒</span>
+            <span className="text-xs font-semibold text-slate-600">
+              Details &amp; Photo Locked
+            </span>
+            <span className="text-[10px] text-slate-400">
+              Pass ML verification (&ge; 80%) to view
+            </span>
+          </div>
+        ) : null}
+
+        {/* Tags */}
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span
             className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
               report.type === "LOST"
@@ -111,45 +151,88 @@ function ReportCard({
               Mine
             </span>
           )}
+          {!isOwner && report.type === "FOUND" && !isLockedFound && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 ml-auto">
+              🔓 Unlocked
+            </span>
+          )}
         </div>
+
+        {/* Title & Info */}
         <h4 className="font-bold text-slate-900 text-sm line-clamp-2 mb-1">
           {report.title}
         </h4>
+
         {report.location && (
           <p className="text-xs text-slate-600 flex items-center gap-1 mb-1">
             <span>📍</span>
             <span className="line-clamp-1">{report.location}</span>
           </p>
         )}
-        {report.color && (
-          <p className="text-xs text-slate-500 flex items-center gap-1">
+
+        {report.color && !isLockedFound && (
+          <p className="text-xs text-slate-500 flex items-center gap-1 mb-1">
             <span>🎨</span>
             <span className="line-clamp-1">{report.color}</span>
           </p>
         )}
+
+        {/* Secret Question Teaser */}
+        {isLockedFound && report.hiddenQuestion && (
+          <div className="mt-2.5 p-2.5 bg-amber-50 rounded-xl border border-amber-200/80 text-[11px] text-amber-900">
+            <span className="font-bold">Secret Question:</span> &quot;{report.hiddenQuestion}&quot;
+          </div>
+        )}
       </div>
 
-      <div className="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between">
-        <div className="text-[11px] text-slate-400 flex flex-col">
+      {/* Footer / Actions */}
+      <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
+        <div className="text-[11px] text-slate-400 flex items-center justify-between">
           <span>Status: {report.status}</span>
           <span>
             {report.createdAt
               ? new Date(report.createdAt).toLocaleDateString("en-IN", {
                   day: "numeric",
                   month: "short",
-                  year: "numeric",
                 })
               : "Recent"}
           </span>
         </div>
-        {isOwner && onDelete && (
-          <button
-            onClick={() => onDelete(report)}
-            className="text-xs font-semibold px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition border border-red-200"
-          >
-            🗑️ Delete
-          </button>
-        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-1">
+          {/* Delete for owner */}
+          {isOwner && onDelete && (
+            <button
+              onClick={() => onDelete(report)}
+              className="text-xs font-semibold px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition border border-red-200"
+            >
+              🗑️ Delete
+            </button>
+          )}
+
+          {/* Verify / Unlock for claimant */}
+          {isLockedFound && onVerify && (
+            <button
+              onClick={() => onVerify(report)}
+              className="w-full text-xs font-bold px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition shadow-xs flex items-center justify-center gap-1.5"
+            >
+              <span>🛡️</span>
+              <span>Answer Question &amp; Unlock (AI)</span>
+            </button>
+          )}
+
+          {/* Unlocked -> Start / Open Chat */}
+          {!isOwner && report.type === "FOUND" && !isLockedFound && onOpenChat && (
+            <button
+              onClick={() => onOpenChat(report)}
+              className="w-full text-xs font-bold px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition shadow-xs flex items-center justify-center gap-1.5"
+            >
+              <span>💬</span>
+              <span>Chat with Founder</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -163,18 +246,24 @@ export default function HomePage() {
   const [myReports, setMyReports] = useState<Report[]>([]);
   const [foundInventory, setFoundInventory] = useState<Report[]>([]);
   const [hasLostReport, setHasLostReport] = useState<boolean>(false);
+  const [userChats, setUserChats] = useState<Chat[]>([]);
 
   // UI state
-  const [activeTab, setActiveTab] = useState<"my" | "inventory">("my");
+  const [activeTab, setActiveTab] = useState<"my" | "inventory" | "chats">("my");
   const [loadingMy, setLoadingMy] = useState(false);
   const [loadingInventory, setLoadingInventory] = useState(false);
+  const [loadingChats, setLoadingChats] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Report | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
+  // Active Modals
+  const [verifyingReport, setVerifyingReport] = useState<Report | null>(null);
+  const [activeChat, setActiveChat] = useState<Chat | null>(null);
+
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
+    setTimeout(() => setToast(null), 4000);
   };
 
   // ── Fetch user's own reports ────────────────────────────────────────────────
@@ -188,10 +277,7 @@ export default function HomePage() {
       const data = await res.json();
       if (data.success) {
         setMyReports(data.reports);
-        // Update access gate based on whether user has a LOST report
-        setHasLostReport(
-          data.reports.some((r: Report) => r.type === "LOST")
-        );
+        setHasLostReport(data.reports.some((r: Report) => r.type === "LOST"));
       }
     } catch (err) {
       console.error("Error fetching my reports:", err);
@@ -200,11 +286,14 @@ export default function HomePage() {
     }
   }, [session?.user?.email]);
 
-  // ── Fetch the FOUND inventory (all users, only FOUND type) ─────────────────
+  // ── Fetch the FOUND inventory ───────────────────────────────────────────────
   const fetchFoundInventory = useCallback(async () => {
+    if (!session?.user?.email) return;
     setLoadingInventory(true);
     try {
-      const res = await fetch("/api/reports?type=FOUND");
+      const res = await fetch(
+        `/api/reports?type=FOUND&viewerEmail=${encodeURIComponent(session.user.email)}`
+      );
       const data = await res.json();
       if (data.success) {
         setFoundInventory(data.reports);
@@ -214,20 +303,42 @@ export default function HomePage() {
     } finally {
       setLoadingInventory(false);
     }
-  }, []);
+  }, [session?.user?.email]);
+
+  // ── Fetch User's Active Chats ───────────────────────────────────────────────
+  const fetchUserChats = useCallback(async () => {
+    if (!session?.user?.email) return;
+    setLoadingChats(true);
+    try {
+      const res = await fetch(
+        `/api/chats?userEmail=${encodeURIComponent(session.user.email)}`
+      );
+      const data = await res.json();
+      if (data.success && data.chats) {
+        setUserChats(data.chats);
+      }
+    } catch (err) {
+      console.error("Error fetching chats:", err);
+    } finally {
+      setLoadingChats(false);
+    }
+  }, [session?.user?.email]);
 
   useEffect(() => {
     if (session) {
       fetchMyReports();
+      fetchUserChats();
     }
-  }, [session, fetchMyReports]);
+  }, [session, fetchMyReports, fetchUserChats]);
 
-  // Fetch found inventory only when the tab is opened AND user qualifies
+  // Fetch inventory when opened and qualified
   useEffect(() => {
     if (activeTab === "inventory" && hasLostReport) {
       fetchFoundInventory();
+    } else if (activeTab === "chats") {
+      fetchUserChats();
     }
-  }, [activeTab, hasLostReport, fetchFoundInventory]);
+  }, [activeTab, hasLostReport, fetchFoundInventory, fetchUserChats]);
 
   // ── Handle Delete ───────────────────────────────────────────────────────────
   const handleDeleteConfirm = async () => {
@@ -244,9 +355,7 @@ export default function HomePage() {
       if (data.success) {
         showToast("Report deleted successfully.");
         setDeleteTarget(null);
-        // Refresh list
         await fetchMyReports();
-        // Also refresh inventory if it was a FOUND item (so inventory updates)
         if (deleteTarget.type === "FOUND" && hasLostReport) {
           await fetchFoundInventory();
         }
@@ -257,6 +366,47 @@ export default function HomePage() {
       showToast("Network error. Please try again.", "error");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // ── Handle Starting / Opening Chat with Founder ─────────────────────────────
+  const handleStartChatWithFounder = async (
+    report: Report,
+    founderEmailOverride?: string,
+    founderNameOverride?: string
+  ) => {
+    if (!session?.user?.email) return;
+
+    const fEmail = founderEmailOverride || report.userEmail;
+    const fName = founderNameOverride || report.userName || "Founder";
+
+    try {
+      const res = await fetch("/api/chats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportId: report._id,
+          reportTitle: report.title,
+          reportCategory: report.category,
+          reportImageUrl: report.imageUrl || null,
+          founderEmail: fEmail,
+          founderName: fName,
+          claimantEmail: session.user.email,
+          claimantName: session.user.name || "Claimant",
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.chat) {
+        setVerifyingReport(null); // Close verification modal
+        setActiveChat(data.chat); // Open chat window
+        fetchUserChats(); // Refresh chat list
+      } else {
+        showToast(data.error || "Failed to initialize chat.", "error");
+      }
+    } catch (err) {
+      console.error("Error creating chat:", err);
+      showToast("Network error opening chat.", "error");
     }
   };
 
@@ -305,13 +455,19 @@ export default function HomePage() {
             <div className="flex items-center gap-2.5">
               <span className="text-emerald-600 font-bold text-base">🎁</span>
               <span>
-                <strong>Report Found Items</strong> with security questions
+                <strong>Report Found Items</strong> with secret verification
               </span>
             </div>
             <div className="flex items-center gap-2.5">
-              <span className="text-amber-600 font-bold text-base">🛡️</span>
+              <span className="text-amber-600 font-bold text-base">🤖</span>
               <span>
-                <strong>Direct Student Match</strong> via authorized Gmail
+                <strong>ML Cosine Similarity</strong> ensures authentic claims
+              </span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <span className="text-violet-600 font-bold text-base">💬</span>
+              <span>
+                <strong>Secure Campus Chat</strong> between finder and loser
               </span>
             </div>
           </div>
@@ -345,6 +501,35 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Verification Modal */}
+      {verifyingReport && session.user?.email && (
+        <VerificationModal
+          report={verifyingReport}
+          userEmail={session.user.email}
+          userName={session.user.name || "Student"}
+          onClose={() => setVerifyingReport(null)}
+          onStartChat={(rep, fEmail, fName) =>
+            handleStartChatWithFounder(rep, fEmail, fName)
+          }
+          onUnlocked={(updated) => {
+            // Update local inventory state
+            setFoundInventory((prev) =>
+              prev.map((r) => (r._id === updated._id ? updated : r))
+            );
+          }}
+        />
+      )}
+
+      {/* Active Chat Window Modal */}
+      {activeChat && session.user?.email && (
+        <ChatWindow
+          chat={activeChat}
+          currentUserEmail={session.user.email}
+          currentUserName={session.user.name || "Student"}
+          onClose={() => setActiveChat(null)}
+        />
+      )}
+
       {/* Delete confirmation modal */}
       {deleteTarget && (
         <ConfirmDeleteModal
@@ -370,7 +555,7 @@ export default function HomePage() {
       )}
 
       {/* ── Top Navigation Bar ─────────────────────────────────────────────── */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-lg">
@@ -435,7 +620,7 @@ export default function HomePage() {
                 Report Lost Product
               </h2>
               <p className="text-slate-600 text-sm leading-relaxed">
-                File a lost item complaint with details, campus location, contact info, and a photo.
+                File a lost item complaint with details, campus location, contact info, and a photo to unlock found inventory.
               </p>
             </div>
             <div className="flex items-center gap-2 font-bold text-blue-600 text-sm mt-5 group-hover:translate-x-1 transition-transform">
@@ -460,7 +645,7 @@ export default function HomePage() {
                 Report Found Product
               </h2>
               <p className="text-slate-600 text-sm leading-relaxed">
-                Found something on campus? Post a photo, location, and a confidential security question.
+                Found something on campus? Post a photo, location, and a confidential security question for AI verification.
               </p>
             </div>
             <div className="flex items-center gap-2 font-bold text-emerald-600 text-sm mt-5 group-hover:translate-x-1 transition-transform">
@@ -476,38 +661,58 @@ export default function HomePage() {
           <div className="flex border-b border-slate-200">
             <button
               onClick={() => setActiveTab("my")}
-              className={`flex-1 py-4 text-sm font-bold transition ${
+              className={`flex-1 py-4 text-sm font-bold transition flex items-center justify-center gap-1.5 ${
                 activeTab === "my"
                   ? "bg-white text-slate-900 border-b-2 border-blue-600"
                   : "text-slate-500 hover:bg-slate-50"
               }`}
             >
-              📋 My Reports
+              <span>📋</span>
+              <span>My Reports</span>
               {myReports.length > 0 && (
-                <span className="ml-2 text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">
+                <span className="ml-1 text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">
                   {myReports.length}
                 </span>
               )}
             </button>
+
             <button
               onClick={() => setActiveTab("inventory")}
-              className={`flex-1 py-4 text-sm font-bold transition ${
+              className={`flex-1 py-4 text-sm font-bold transition flex items-center justify-center gap-1.5 ${
                 activeTab === "inventory"
                   ? "bg-white text-slate-900 border-b-2 border-emerald-600"
                   : "text-slate-500 hover:bg-slate-50"
               }`}
             >
-              🎁 Found Items Inventory
+              <span>🎁</span>
+              <span>Found Inventory</span>
               {hasLostReport && foundInventory.length > 0 && (
-                <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+                <span className="ml-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
                   {foundInventory.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab("chats")}
+              className={`flex-1 py-4 text-sm font-bold transition flex items-center justify-center gap-1.5 ${
+                activeTab === "chats"
+                  ? "bg-white text-slate-900 border-b-2 border-violet-600"
+                  : "text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              <span>💬</span>
+              <span>Campus Chats</span>
+              {userChats.length > 0 && (
+                <span className="ml-1 text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-semibold">
+                  {userChats.length}
                 </span>
               )}
             </button>
           </div>
 
           <div className="p-6 sm:p-8">
-            {/* ── TAB: MY REPORTS ─────────────────────────────────────────── */}
+            {/* ── TAB 1: MY REPORTS ──────────────────────────────────────── */}
             {activeTab === "my" && (
               <>
                 {loadingMy ? (
@@ -568,7 +773,7 @@ export default function HomePage() {
               </>
             )}
 
-            {/* ── TAB: FOUND ITEMS INVENTORY ──────────────────────────────── */}
+            {/* ── TAB 2: FOUND ITEMS INVENTORY ───────────────────────────── */}
             {activeTab === "inventory" && (
               <>
                 {/* ACCESS GATE: must have filed a Lost report first */}
@@ -581,11 +786,11 @@ export default function HomePage() {
                       Access Restricted
                     </h3>
                     <p className="text-sm text-slate-600 max-w-sm mx-auto mb-2 leading-relaxed">
-                      To protect privacy and prevent misuse, you can only browse the Found Items Inventory after filing{" "}
+                      To protect privacy and prevent false claims, you can only browse the Found Items Inventory after filing{" "}
                       <strong>at least one Lost item complaint</strong>.
                     </p>
                     <p className="text-xs text-slate-400 mb-6">
-                      This ensures only students who have genuinely lost something can view what has been found.
+                      This ensures only students with genuine lost reports can participate.
                     </p>
                     <Link
                       href="/report-lost"
@@ -611,11 +816,11 @@ export default function HomePage() {
                   </div>
                 ) : (
                   <>
-                    <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium flex items-center gap-2">
-                      <span>🛡️</span>
-                      <span>
-                        Security details (verification questions &amp; answers) are hidden for each item. Only share your identity with the finder through the campus system.
-                      </span>
+                    <div className="mb-5 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 font-medium flex items-center gap-2.5">
+                      <span className="text-lg">🤖</span>
+                      <div>
+                        <strong>ML Security Protection Active:</strong> To claim any item below, you must answer the secret verification question. Our Cosine Similarity engine requires <strong>&ge; 80% semantic match</strong> to unlock details and start a chat with the founder.
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {foundInventory.map((report) => (
@@ -628,10 +833,85 @@ export default function HomePage() {
                               ? setDeleteTarget
                               : undefined
                           }
+                          onVerify={(rep) => setVerifyingReport(rep)}
+                          onOpenChat={(rep) => handleStartChatWithFounder(rep)}
                         />
                       ))}
                     </div>
                   </>
+                )}
+              </>
+            )}
+
+            {/* ── TAB 3: CAMPUS CHATS ────────────────────────────────────── */}
+            {activeTab === "chats" && (
+              <>
+                {loadingChats ? (
+                  <div className="py-12 text-center text-slate-500 text-sm animate-pulse">
+                    Loading conversations...
+                  </div>
+                ) : userChats.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <p className="text-3xl mb-3">💬</p>
+                    <p className="font-bold text-slate-800 mb-1">
+                      No active conversations yet
+                    </p>
+                    <p className="text-sm text-slate-500 max-w-sm mx-auto mb-4">
+                      When an item ownership is verified through the &ge; 80% ML Cosine Similarity check, direct chat opens here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {userChats.map((chat) => {
+                      const isClaimant = session.user?.email === chat.claimantEmail;
+                      const otherName = isClaimant ? chat.founderName : chat.claimantName;
+                      const otherRole = isClaimant ? "Founder" : "Claimant";
+
+                      return (
+                        <div
+                          key={chat._id}
+                          onClick={() => setActiveChat(chat)}
+                          className="border border-slate-200 hover:border-violet-400 rounded-2xl p-4 bg-white hover:shadow-md cursor-pointer transition flex flex-col justify-between"
+                        >
+                          <div>
+                            <div className="flex items-center gap-3 mb-3">
+                              {chat.reportImageUrl ? (
+                                <img
+                                  src={chat.reportImageUrl}
+                                  alt={chat.reportTitle}
+                                  className="w-12 h-12 rounded-xl object-cover border border-slate-200"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center text-xl font-bold">
+                                  💬
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <h4 className="font-bold text-slate-900 text-sm line-clamp-1">
+                                  {chat.reportTitle}
+                                </h4>
+                                <p className="text-xs text-slate-500 truncate">
+                                  With {otherRole}:{" "}
+                                  <strong className="text-slate-800">{otherName}</strong>
+                                </p>
+                              </div>
+                            </div>
+
+                            <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 line-clamp-2 italic">
+                              &quot;{chat.lastMessage || "Click to open conversation"}&quot;
+                            </p>
+                          </div>
+
+                          <div className="mt-4 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                            <span>Status: {chat.status}</span>
+                            <span className="font-bold text-violet-600 hover:underline">
+                              Open Chat →
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </>
             )}
