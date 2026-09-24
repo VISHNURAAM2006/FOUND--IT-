@@ -64,6 +64,27 @@ export async function POST(
     const client = await clientPromise;
     const db = client.db("foundit_db");
 
+    // Check if chat is closed / item returned for privacy protection
+    let chatObjId: ObjectId | null = null;
+    try {
+      chatObjId = new ObjectId(id);
+    } catch {}
+    const chatQuery: any = chatObjId
+      ? { $or: [{ _id: chatObjId }, { _id: id }] }
+      : { _id: id };
+    const chat = await db.collection("chats").findOne(chatQuery);
+
+    if (chat?.status === "RETURNED") {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "This conversation has been closed to protect privacy because the item has been returned.",
+        },
+        { status: 403 }
+      );
+    }
+
     const messageDoc = {
       chatId: id,
       senderEmail,
@@ -77,7 +98,7 @@ export async function POST(
     // Update the parent chat with the last message and timestamp
     try {
       await db.collection("chats").updateOne(
-        { _id: new ObjectId(id) },
+        { _id: new ObjectId(id) } as any,
         {
           $set: {
             lastMessage: trimmed,

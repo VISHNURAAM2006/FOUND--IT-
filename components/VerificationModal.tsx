@@ -17,7 +17,14 @@ interface Report {
   userName?: string;
   hiddenQuestion?: string;
   description?: string;
+  foundDate?: string;
   createdAt: string;
+  isLocked?: boolean;
+  isUnlocked?: boolean;
+  returnedAt?: string;
+  returnedBy?: string;
+  returnedTo?: string;
+  handoverLogMessage?: string;
 }
 
 interface VerificationModalProps {

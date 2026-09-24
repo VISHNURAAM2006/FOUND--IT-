@@ -25,6 +25,10 @@ interface Report {
   createdAt: string;
   isLocked?: boolean;
   isUnlocked?: boolean;
+  returnedAt?: string;
+  returnedBy?: string;
+  returnedTo?: string;
+  handoverLogMessage?: string;
 }
 
 interface Chat {
@@ -136,15 +140,25 @@ function ReportCard({
 
         {/* Tags */}
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <span
-            className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
-              report.type === "LOST"
-                ? "bg-blue-100 text-blue-700"
-                : "bg-emerald-100 text-emerald-700"
-            }`}
-          >
-            {report.type}
-          </span>
+          {report.status === "RETURNED" ? (
+            <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-600 text-white shadow-xs">
+              {report.type === "LOST" ? "✓ RECEIVED BACK" : "✓ RETURNED TO OWNER"}
+            </span>
+          ) : report.status === "HANDOVER_PENDING" ? (
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+              📦 HANDOVER PENDING
+            </span>
+          ) : (
+            <span
+              className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                report.type === "LOST"
+                  ? "bg-blue-100 text-blue-700"
+                  : "bg-emerald-100 text-emerald-700"
+              }`}
+            >
+              {report.type}
+            </span>
+          )}
           <span className="text-xs text-slate-500 font-medium">
             {report.category}
           </span>
@@ -153,7 +167,7 @@ function ReportCard({
               Mine
             </span>
           )}
-          {!isOwner && report.type === "FOUND" && !isLockedFound && (
+          {!isOwner && report.type === "FOUND" && !isLockedFound && report.status !== "RETURNED" && (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 ml-auto">
               🔓 Unlocked
             </span>
@@ -183,6 +197,18 @@ function ReportCard({
         {isLockedFound && report.hiddenQuestion && (
           <div className="mt-2.5 p-2.5 bg-amber-50 rounded-xl border border-amber-200/80 text-[11px] text-amber-900">
             <span className="font-bold">Secret Question:</span> &quot;{report.hiddenQuestion}&quot;
+          </div>
+        )}
+
+        {/* Returned Confirmation Notice */}
+        {report.status === "RETURNED" && (
+          <div className="mt-2.5 p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 font-medium flex items-center gap-1.5">
+            <span>✓</span>
+            <span className="truncate">
+              {report.type === "LOST"
+                ? `Received back from ${report.returnedBy || "Founder"}`
+                : `Returned to ${report.returnedTo || "Owner"}`}
+            </span>
           </div>
         )}
       </div>
@@ -891,9 +917,24 @@ export default function HomePage() {
                           </div>
 
                           <div className="mt-4 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                            <span>Status: {chat.status}</span>
+                            <span>
+                              {chat.status === "RETURNED" ? (
+                                <span className="font-bold text-emerald-700 flex items-center gap-1">
+                                  <span>✓</span>
+                                  <span>
+                                    {isClaimant
+                                      ? `Received from ${chat.founderName}`
+                                      : `Returned to ${chat.claimantName}`}
+                                  </span>
+                                </span>
+                              ) : (
+                                `Status: ${chat.status}`
+                              )}
+                            </span>
                             <span className="font-bold text-violet-600 hover:underline">
-                              Open Details &amp; Chat →
+                              {chat.status === "RETURNED"
+                                ? "View Handover Receipt →"
+                                : "Open Details & Chat →"}
                             </span>
                           </div>
                         </div>

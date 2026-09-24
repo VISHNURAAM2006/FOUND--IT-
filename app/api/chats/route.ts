@@ -47,7 +47,7 @@ export async function GET(request: Request) {
               // Ignore invalid ObjectId format
             }
 
-            const query = reportObjId
+            const query: any = reportObjId
               ? { $or: [{ _id: reportObjId }, { _id: chat.reportId }] }
               : { _id: chat.reportId };
 
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
       try {
         rId = new ObjectId(reportId);
       } catch {}
-      const q = rId ? { $or: [{ _id: rId }, { _id: reportId }] } : { _id: reportId };
+      const q: any = rId ? { $or: [{ _id: rId }, { _id: reportId }] } : { _id: reportId };
       reportDoc = await db.collection("reports").findOne(q);
     } catch {}
 
