@@ -106,9 +106,23 @@ export async function POST(request: Request) {
       reportDoc = await db.collection("reports").findOne(q);
     } catch {}
 
-    // Check if chat already exists for this item and claimant
+    // If product is already RETURNED, do not allow establishing new chats
+    if (reportDoc?.status === "RETURNED") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "This item has already been officially returned to its verified owner. New chats cannot be established.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Strict Uniqueness:
+    // No two communications can establish between the same product, loser, and founder.
+    // However, a founder can have separate communications for the same product with a different loser (since claimantEmail differs).
     const existingChat = await db.collection("chats").findOne({
       reportId: reportId.toString(),
+      founderEmail,
       claimantEmail,
     });
 
@@ -143,6 +157,67 @@ export async function POST(request: Request) {
     });
   } catch (error: unknown) {
     console.error("Error in POST /api/chats:", error);
+    const errorMessage = error instanceof Error ? error.message : "Database error";
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    const userEmail = searchParams.get("userEmail");
+
+    if (!id || !userEmail) {
+      return NextResponse.json(
+        { success: false, error: "Chat ID and userEmail are required." },
+        { status: 400 }
+      );
+    }
+
+    let chatObjId: ObjectId | null = null;
+    try {
+      chatObjId = new ObjectId(id);
+    } catch {}
+
+    const client = await clientPromise;
+    const db = client.db("foundit_db");
+
+    const query: any = chatObjId
+      ? { $or: [{ _id: chatObjId }, { _id: id }] }
+      : { _id: id };
+
+    const chat = await db.collection("chats").findOne(query);
+
+    if (!chat) {
+      return NextResponse.json(
+        { success: false, error: "Chat conversation not found." },
+        { status: 404 }
+      );
+    }
+
+    // Authorization: Only participants (founder or claimant) can delete the chat
+    if (chat.founderEmail !== userEmail && chat.claimantEmail !== userEmail) {
+      return NextResponse.json(
+        { success: false, error: "You are not authorized to delete this conversation." },
+        { status: 403 }
+      );
+    }
+
+    // Delete chat document
+    await db.collection("chats").deleteOne(query);
+
+    // Delete associated messages
+    await db.collection("messages").deleteMany({
+      $or: [{ chatId: id }, { chatId: chat._id.toString() }],
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Chat conversation deleted successfully.",
+    });
+  } catch (error: unknown) {
+    console.error("Error in DELETE /api/chats:", error);
     const errorMessage = error instanceof Error ? error.message : "Database error";
     return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }

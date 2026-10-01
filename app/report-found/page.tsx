@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import ImageUpload from "@/components/ImageUpload";
+import { VisualFeatures } from "@/lib/ai-matcher";
 
 export default function ReportFoundPage() {
   const { data: session, status } = useSession();
@@ -21,6 +22,7 @@ export default function ReportFoundPage() {
     hiddenAnswer: "",
   });
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [visualFeatures, setVisualFeatures] = useState<VisualFeatures | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -42,6 +44,7 @@ export default function ReportFoundPage() {
           category,
           type: "FOUND",
           imageUrl,
+          visualFeatures,
           userEmail: session?.user?.email || "anonymous",
           userName: session?.user?.name || "Found!t User",
         }),
@@ -75,6 +78,7 @@ export default function ReportFoundPage() {
       hiddenAnswer: "",
     });
     setImageUrl(null);
+    setVisualFeatures(null);
     setSubmitSuccess(false);
     setErrorMessage("");
   };
@@ -290,7 +294,10 @@ export default function ReportFoundPage() {
                 label="Provide Image of Found Product"
                 sublabel="Attach a clear photo of the found item. This helps confirm ownership."
                 value={imageUrl}
-                onChange={(url) => setImageUrl(url)}
+                onChange={(url, vf) => {
+                  setImageUrl(url);
+                  setVisualFeatures(vf || null);
+                }}
               />
 
               {/* Security Verification Box */}

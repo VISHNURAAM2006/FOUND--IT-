@@ -2,12 +2,13 @@
 
 import { useState, useRef } from "react";
 import { processImageFile } from "@/lib/image-utils";
+import { VisualFeatures } from "@/lib/ai-matcher";
 
 interface ImageUploadProps {
   label: string;
   sublabel?: string;
   value: string | null;
-  onChange: (dataUrl: string | null) => void;
+  onChange: (dataUrl: string | null, visualFeatures?: VisualFeatures | null) => void;
 }
 
 export default function ImageUpload({
@@ -27,8 +28,8 @@ export default function ImageUpload({
     }
     try {
       setIsProcessing(true);
-      const dataUrl = await processImageFile(file);
-      onChange(dataUrl);
+      const result = await processImageFile(file);
+      onChange(result.dataUrl, result.visualFeatures);
     } catch (err) {
       console.error(err);
       alert("Error processing the image. Please try another image.");
@@ -103,7 +104,7 @@ export default function ImageUpload({
               </button>
               <button
                 type="button"
-                onClick={() => onChange(null)}
+                onClick={() => onChange(null, null)}
                 className="text-xs px-3 py-1.5 bg-red-50 text-red-600 rounded-md font-medium hover:bg-red-100 transition"
               >
                 Remove

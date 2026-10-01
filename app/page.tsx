@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import VerificationModal from "@/components/VerificationModal";
 import ProductChatWorkspace from "@/components/ProductChatWorkspace";
+import AiRecommendationsModal from "@/components/AiRecommendationsModal";
+import { playNotificationChime } from "@/lib/notification";
 
 interface Report {
   _id: string;
@@ -27,7 +29,9 @@ interface Report {
   isUnlocked?: boolean;
   returnedAt?: string;
   returnedBy?: string;
+  returnedByEmail?: string;
   returnedTo?: string;
+  returnedToEmail?: string;
   handoverLogMessage?: string;
 }
 
@@ -44,6 +48,8 @@ interface Chat {
   status: string;
   lastMessage?: string;
   lastMessageAt?: string;
+  closedReason?: string;
+  isHandoverWinner?: boolean;
   report?: Report;
 }
 
@@ -100,6 +106,59 @@ function ConfirmDeleteModal({
   );
 }
 
+// ─── Confirmation Delete Chat Dialog ──────────────────────────────────────────
+function ConfirmDeleteChatModal({
+  chat,
+  onConfirm,
+  onCancel,
+  isDeleting,
+}: {
+  chat: Chat;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isDeleting: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 backdrop-blur-xs">
+      <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-200">
+        <div className="text-3xl mb-3 text-center">🗑️</div>
+        <h3 className="text-lg font-bold text-slate-900 text-center mb-1">
+          Delete Conversation?
+        </h3>
+        <p className="text-sm text-slate-600 text-center mb-1">
+          This will permanently delete the chat history for:
+        </p>
+        <p className="text-sm font-semibold text-slate-900 text-center mb-5 px-2 line-clamp-2">
+          &quot;{chat.reportTitle}&quot;
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            disabled={isDeleting}
+            className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-100 transition disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {isDeleting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              "Yes, Delete Chat"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Report Card ───────────────────────────────────────────────────────────────
 function ReportCard({
   report,
@@ -107,12 +166,14 @@ function ReportCard({
   onDelete,
   onVerify,
   onOpenChat,
+  onViewAiMatches,
 }: {
   report: Report;
   isOwner: boolean;
   onDelete?: (report: Report) => void;
   onVerify?: (report: Report) => void;
   onOpenChat?: (report: Report) => void;
+  onViewAiMatches?: (report: Report) => void;
 }) {
   const isLockedFound = report.type === "FOUND" && !isOwner && report.isLocked !== false;
 
@@ -228,7 +289,18 @@ function ReportCard({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 pt-1">
+        <div className="flex gap-2 pt-1 flex-wrap">
+          {/* AI Matches button for LOST report owner (only if case is active/unreturned) */}
+          {isOwner && report.type === "LOST" && report.status !== "RETURNED" && onViewAiMatches && (
+            <button
+              onClick={() => onViewAiMatches(report)}
+              className="text-xs font-bold px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-lg transition shadow-xs flex items-center gap-1.5"
+            >
+              <span>✨</span>
+              <span>AI Matches</span>
+            </button>
+          )}
+
           {/* Delete for owner */}
           {isOwner && onDelete && (
             <button
@@ -274,6 +346,7 @@ export default function HomePage() {
   const [myReports, setMyReports] = useState<Report[]>([]);
   const [foundInventory, setFoundInventory] = useState<Report[]>([]);
   const [hasLostReport, setHasLostReport] = useState<boolean>(false);
+  const [activeLostCount, setActiveLostCount] = useState<number>(0);
   const [userChats, setUserChats] = useState<Chat[]>([]);
 
   // UI state
@@ -283,16 +356,41 @@ export default function HomePage() {
   const [loadingChats, setLoadingChats] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Report | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [chatDeleteTarget, setChatDeleteTarget] = useState<Chat | null>(null);
+  const [isDeletingChat, setIsDeletingChat] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   // Active Modals & Workspaces
   const [verifyingReport, setVerifyingReport] = useState<Report | null>(null);
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
+  const [aiTargetLostReport, setAiTargetLostReport] = useState<Report | null>(null);
+
+  // Chat Notification Bar & Dropdown State
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+  const [notificationsClearedAt, setNotificationsClearedAt] = useState<number>(0);
+  const [liveChatAlert, setLiveChatAlert] = useState<{
+    chat: Chat;
+    senderName: string;
+    content: string;
+  } | null>(null);
+
+  const lastKnownChatMessages = useRef<Record<string, string>>({});
+  const isInitialChatsLoad = useRef(true);
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
+
+  // Auto-dismiss live chat notification after 6.5s
+  useEffect(() => {
+    if (liveChatAlert) {
+      const timer = setTimeout(() => {
+        setLiveChatAlert(null);
+      }, 6500);
+      return () => clearTimeout(timer);
+    }
+  }, [liveChatAlert]);
 
   // ── Fetch user's own reports ────────────────────────────────────────────────
   const fetchMyReports = useCallback(async () => {
@@ -305,7 +403,16 @@ export default function HomePage() {
       const data = await res.json();
       if (data.success) {
         setMyReports(data.reports);
-        setHasLostReport(data.reports.some((r: Report) => r.type === "LOST"));
+        // Only active (non-returned, non-resolved) lost reports grant inventory access
+        const activeLost = data.reports.filter(
+          (r: Report) =>
+            r.type === "LOST" &&
+            r.status !== "RETURNED" &&
+            r.status !== "RESOLVED"
+        );
+        const count = activeLost.length;
+        setActiveLostCount(count);
+        setHasLostReport(count >= 1);
       }
     } catch (err) {
       console.error("Error fetching my reports:", err);
@@ -333,24 +440,60 @@ export default function HomePage() {
     }
   }, [session?.user?.email]);
 
-  // ── Fetch User's Active Chats ───────────────────────────────────────────────
-  const fetchUserChats = useCallback(async () => {
-    if (!session?.user?.email) return;
-    setLoadingChats(true);
-    try {
-      const res = await fetch(
-        `/api/chats?userEmail=${encodeURIComponent(session.user.email)}`
-      );
-      const data = await res.json();
-      if (data.success && data.chats) {
-        setUserChats(data.chats);
+  // ── Fetch User's Active Chats with Live Notification Detection ──────────────
+  const fetchUserChats = useCallback(
+    async (isPolling = false) => {
+      if (!session?.user?.email) return;
+      if (!isPolling) setLoadingChats(true);
+      try {
+        const res = await fetch(
+          `/api/chats?userEmail=${encodeURIComponent(session.user.email)}`
+        );
+        const data = await res.json();
+        if (data.success && data.chats) {
+          const chats: Chat[] = data.chats;
+          setUserChats(chats);
+
+          // Detect new incoming messages across any active chat
+          if (!isInitialChatsLoad.current) {
+            for (const c of chats) {
+              const previousMsg = lastKnownChatMessages.current[c._id];
+              const currentMsg = c.lastMessage;
+
+              if (previousMsg !== undefined && previousMsg !== currentMsg && currentMsg) {
+                const isClaimant = session.user.email === c.claimantEmail;
+                const senderName = isClaimant ? c.founderName : c.claimantName;
+
+                // Don't alert if the chat workspace is already actively open for this exact chat
+                if (activeChat?._id !== c._id) {
+                  setLiveChatAlert({
+                    chat: c,
+                    senderName,
+                    content: currentMsg,
+                  });
+                  playNotificationChime();
+                }
+              }
+            }
+          } else {
+            isInitialChatsLoad.current = false;
+          }
+
+          // Record latest known message strings
+          chats.forEach((c) => {
+            if (c._id && c.lastMessage) {
+              lastKnownChatMessages.current[c._id] = c.lastMessage;
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching chats:", err);
+      } finally {
+        if (!isPolling) setLoadingChats(false);
       }
-    } catch (err) {
-      console.error("Error fetching chats:", err);
-    } finally {
-      setLoadingChats(false);
-    }
-  }, [session?.user?.email]);
+    },
+    [session?.user?.email, activeChat?._id]
+  );
 
   useEffect(() => {
     if (session) {
@@ -358,6 +501,15 @@ export default function HomePage() {
       fetchUserChats();
     }
   }, [session, fetchMyReports, fetchUserChats]);
+
+  // Background polling for new chat messages every 4 seconds
+  useEffect(() => {
+    if (!session?.user?.email) return;
+    const interval = setInterval(() => {
+      fetchUserChats(true);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [session?.user?.email, fetchUserChats]);
 
   // Fetch inventory when opened and qualified
   useEffect(() => {
@@ -394,6 +546,35 @@ export default function HomePage() {
       showToast("Network error. Please try again.", "error");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // ── Handle Delete Chat ──────────────────────────────────────────────────────
+  const handleDeleteChatConfirm = async () => {
+    if (!chatDeleteTarget || !session?.user?.email) return;
+    setIsDeletingChat(true);
+    try {
+      const res = await fetch(
+        `/api/chats?id=${chatDeleteTarget._id}&userEmail=${encodeURIComponent(
+          session.user.email
+        )}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        showToast("Conversation deleted successfully.");
+        if (activeChat?._id === chatDeleteTarget._id) {
+          setActiveChat(null);
+        }
+        setChatDeleteTarget(null);
+        await fetchUserChats();
+      } else {
+        showToast(data.error || "Failed to delete conversation.", "error");
+      }
+    } catch {
+      showToast("Network error. Could not delete conversation.", "error");
+    } finally {
+      setIsDeletingChat(false);
     }
   };
 
@@ -458,6 +639,24 @@ export default function HomePage() {
   if (!session) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex flex-col justify-center items-center px-4 py-12">
+        {/* ── Chat & Handover Notification Alert Bar near Login ── */}
+        <div className="max-w-md w-full mb-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-2xl p-4 shadow-lg shadow-violet-500/20 flex items-center gap-3 animate-in fade-in slide-in-from-top-3">
+          <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-xl shrink-0">
+            🔔
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-violet-200">
+                Live Chat Notifications
+              </span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            </div>
+            <p className="text-xs text-white/95 mt-0.5 leading-snug">
+              Sign in with your campus Google account to receive real-time direct chats, replies from finders, and secure return OTP alerts.
+            </p>
+          </div>
+        </div>
+
         <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-slate-200 p-8 sm:p-10 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 text-white text-3xl font-black mb-5 shadow-lg shadow-blue-500/30">
             F!
@@ -521,6 +720,21 @@ export default function HomePage() {
   const myLostReports = myReports.filter((r) => r.type === "LOST");
   const myFoundReports = myReports.filter((r) => r.type === "FOUND");
 
+  // Filter active chat notifications that haven't been cleared
+  const unreadChats = userChats.filter((c) => {
+    if (c.status === "RETURNED") return false;
+    if (notificationsClearedAt && c.lastMessageAt) {
+      return new Date(c.lastMessageAt).getTime() > notificationsClearedAt;
+    }
+    return true;
+  });
+
+  const handleClearNotifications = () => {
+    setNotificationsClearedAt(Date.now());
+    setLiveChatAlert(null);
+    showToast("Chat notifications cleared.");
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Verification Modal */}
@@ -549,16 +763,54 @@ export default function HomePage() {
           currentUserName={session.user.name || "Student"}
           initialReport={activeChat.report}
           onClose={() => setActiveChat(null)}
+          onChatDeleted={(_deletedId) => {
+            setActiveChat(null);
+            fetchUserChats();
+            showToast("Conversation deleted.");
+          }}
+          onHandoverCompleted={() => {
+            fetchMyReports();
+            fetchUserChats();
+            fetchFoundInventory();
+          }}
         />
       )}
 
-      {/* Delete confirmation modal */}
+      {/* Delete Report confirmation modal */}
       {deleteTarget && (
         <ConfirmDeleteModal
           report={deleteTarget}
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteTarget(null)}
           isDeleting={isDeleting}
+        />
+      )}
+
+      {/* Delete Chat confirmation modal */}
+      {chatDeleteTarget && (
+        <ConfirmDeleteChatModal
+          chat={chatDeleteTarget}
+          onConfirm={handleDeleteChatConfirm}
+          onCancel={() => setChatDeleteTarget(null)}
+          isDeleting={isDeletingChat}
+        />
+      )}
+
+      {/* AI Recommendations Modal for Lost Reports */}
+      {aiTargetLostReport && session.user?.email && (
+        <AiRecommendationsModal
+          lostReport={aiTargetLostReport}
+          userEmail={session.user.email}
+          userName={session.user.name || "Student"}
+          onClose={() => setAiTargetLostReport(null)}
+          onVerify={(rep) => {
+            setAiTargetLostReport(null);
+            setVerifyingReport(rep);
+          }}
+          onOpenChat={(rep) => {
+            setAiTargetLostReport(null);
+            handleStartChatWithFounder(rep);
+          }}
         />
       )}
 
@@ -589,6 +841,115 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* ── Chat Notification Bar / Bell ── */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowNotificationsDropdown((prev) => !prev)}
+                className="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center justify-center cursor-pointer"
+                title="Chat Notifications"
+              >
+                <span className="text-xl">🔔</span>
+                {unreadChats.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-violet-600 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-xs">
+                    {unreadChats.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Notifications Dropdown Panel */}
+              {showNotificationsDropdown && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-in fade-in zoom-in-95">
+                  <div className="p-3.5 bg-gradient-to-r from-violet-50 to-indigo-50 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">💬</span>
+                      <h4 className="font-bold text-xs text-slate-900 uppercase tracking-wide">
+                        Chat Notifications
+                      </h4>
+                      {unreadChats.length > 0 && (
+                        <span className="text-[10px] font-black text-white bg-violet-600 px-2 py-0.5 rounded-full shadow-xs">
+                          {unreadChats.length} new
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleClearNotifications}
+                      className="text-xs font-bold text-slate-600 hover:text-rose-600 bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 px-2.5 py-1 rounded-xl transition shadow-2xs flex items-center gap-1 cursor-pointer"
+                      title="Clear notifications and reset badge"
+                    >
+                      <span>🧹</span>
+                      <span>Clear Notifications</span>
+                    </button>
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                    {userChats.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-slate-400">
+                        No chat notifications yet.
+                      </div>
+                    ) : (
+                      userChats.map((c) => {
+                        const isClaimant = session.user?.email === c.claimantEmail;
+                        const otherName = isClaimant ? c.founderName : c.claimantName;
+                        const otherRole = isClaimant ? "Founder" : "Claimant";
+
+                        return (
+                          <div
+                            key={c._id}
+                            onClick={() => {
+                              setShowNotificationsDropdown(false);
+                              setActiveChat(c);
+                            }}
+                            className="p-3 hover:bg-slate-50 cursor-pointer transition flex items-start gap-3"
+                          >
+                            <div className="w-9 h-9 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center text-base shrink-0 font-bold">
+                              💬
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-1 mb-0.5">
+                                <p className="font-bold text-xs text-slate-900 truncate">
+                                  {c.reportTitle}
+                                </p>
+                                <span
+                                  className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full shrink-0 ${
+                                    c.status === "RETURNED"
+                                      ? "bg-slate-100 text-slate-500"
+                                      : "bg-emerald-100 text-emerald-700"
+                                  }`}
+                                >
+                                  {c.status === "RETURNED" ? "Closed" : "Active"}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-500 truncate">
+                                With {otherRole}:{" "}
+                                <strong className="text-slate-700">{otherName}</strong>
+                              </p>
+                              <p className="text-[11px] text-slate-600 truncate mt-0.5 italic">
+                                &quot;{c.lastMessage || "Click to open conversation"}&quot;
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
+                    <button
+                      onClick={() => {
+                        setShowNotificationsDropdown(false);
+                        setActiveTab("chats");
+                      }}
+                      className="text-xs font-bold text-violet-600 hover:text-violet-700 cursor-pointer"
+                    >
+                      View All Campus Chats →
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="hidden sm:flex flex-col text-right">
               <span className="text-sm font-semibold text-slate-800">
                 {session.user?.name || "Student"}
@@ -611,6 +972,46 @@ export default function HomePage() {
           </div>
         </div>
       </header>
+
+      {/* ── Global Live Chat Notification Bar (Pops up when message received) ── */}
+      {liveChatAlert && (
+        <div className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-4 py-2.5 shadow-md flex items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2 duration-200 sticky top-16 z-25">
+          <div className="max-w-6xl mx-auto w-full flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="text-base animate-pulse">💬</span>
+              <span className="truncate">
+                <strong>New Message from {liveChatAlert.senderName}</strong> regarding &quot;
+                {liveChatAlert.chat.reportTitle}&quot;: &quot;{liveChatAlert.content}&quot;
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  setActiveChat(liveChatAlert.chat);
+                  setLiveChatAlert(null);
+                }}
+                className="px-3 py-1 bg-white text-violet-700 hover:bg-violet-50 font-bold rounded-lg transition shadow-2xs cursor-pointer"
+              >
+                Open Chat →
+              </button>
+              <button
+                onClick={handleClearNotifications}
+                className="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg text-xs transition cursor-pointer"
+                title="Clear notification and reset badges"
+              >
+                Clear Notifications
+              </button>
+              <button
+                onClick={() => setLiveChatAlert(null)}
+                className="text-white/80 hover:text-white p-1 cursor-pointer"
+                title="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Main Content ───────────────────────────────────────────────────── */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -706,13 +1107,17 @@ export default function HomePage() {
                   : "text-slate-500 hover:bg-slate-50"
               }`}
             >
-              <span>🎁</span>
+              <span>{hasLostReport ? "🎁" : "🔒"}</span>
               <span>Found Inventory</span>
-              {hasLostReport && foundInventory.length > 0 && (
+              {hasLostReport && foundInventory.length > 0 ? (
                 <span className="ml-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
                   {foundInventory.length}
                 </span>
-              )}
+              ) : !hasLostReport ? (
+                <span className="ml-1 text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-bold">
+                  Restricted
+                </span>
+              ) : null}
             </button>
 
             <button
@@ -765,6 +1170,7 @@ export default function HomePage() {
                               report={report}
                               isOwner={true}
                               onDelete={setDeleteTarget}
+                              onViewAiMatches={(rep) => setAiTargetLostReport(rep)}
                             />
                           ))}
                         </div>
@@ -798,29 +1204,68 @@ export default function HomePage() {
             {/* ── TAB 2: FOUND ITEMS INVENTORY ───────────────────────────── */}
             {activeTab === "inventory" && (
               <>
-                {/* ACCESS GATE: must have filed a Lost report first */}
+                {/* ACCESS GATE: user must have at least 1 ACTIVE (unresolved) Lost complaint */}
                 {!hasLostReport ? (
-                  <div className="py-12 text-center">
-                    <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
-                      🔒
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-2">
-                      Access Restricted
-                    </h3>
-                    <p className="text-sm text-slate-600 max-w-sm mx-auto mb-2 leading-relaxed">
-                      To protect privacy and prevent false claims, you can only browse the Found Items Inventory after filing{" "}
-                      <strong>at least one Lost item complaint</strong>.
-                    </p>
-                    <p className="text-xs text-slate-400 mb-6">
-                      This ensures only students with genuine lost reports can participate.
-                    </p>
-                    <Link
-                      href="/report-lost"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition"
-                    >
-                      <span>🔍</span>
-                      <span>File a Lost Report First</span>
-                    </Link>
+                  <div className="py-12 text-center max-w-lg mx-auto px-4">
+                    {myLostReports.some((r) => r.status === "RETURNED") ? (
+                      /* User previously had a lost complaint, but it was resolved & returned */
+                      <>
+                        <div className="w-16 h-16 bg-slate-100 text-slate-700 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-4 border border-slate-200 shadow-xs">
+                          🔒
+                        </div>
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold mb-3 border border-emerald-200">
+                          <span>✓</span>
+                          <span>Previous Case Successfully Returned</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900 mb-2">
+                          All Cases Closed — Inventory Restricted
+                        </h3>
+                        <p className="text-sm text-slate-600 mb-4 leading-relaxed">
+                          Your lost item complaint has been officially resolved and marked as <strong>RETURNED</strong>.
+                        </p>
+                        <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900 mb-6 text-left space-y-1.5">
+                          <p className="font-bold flex items-center gap-1.5 text-amber-950">
+                            <span>🛡️</span>
+                            <span>Campus Privacy Rule: Active Cases ≥ 1 Required</span>
+                          </p>
+                          <p className="text-amber-800 leading-relaxed">
+                            You currently have <strong>0 active lost complaints</strong>. To protect fellow students&apos; property and avoid unauthorized browsing, access to the campus Found Inventory is restricted until you file a new lost item complaint.
+                          </p>
+                        </div>
+                        <Link
+                          href="/report-lost"
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white text-sm font-bold rounded-2xl hover:bg-blue-700 transition shadow-md shadow-blue-500/20"
+                        >
+                          <span>🔍</span>
+                          <span>File a New Lost Complaint</span>
+                          <span>→</span>
+                        </Link>
+                      </>
+                    ) : (
+                      /* User has never filed any lost complaint */
+                      <>
+                        <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-xs">
+                          🔒
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900 mb-2">
+                          Found Inventory Restricted
+                        </h3>
+                        <p className="text-sm text-slate-600 mb-2 leading-relaxed">
+                          To protect student privacy and prevent false claims, browsing the Found Items Inventory is strictly restricted.
+                        </p>
+                        <p className="text-xs text-slate-500 mb-6">
+                          You must have <strong>at least 1 active Lost item complaint</strong> (active cases ≥ 1) to view the Found Inventory.
+                        </p>
+                        <Link
+                          href="/report-lost"
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white text-sm font-bold rounded-2xl hover:bg-blue-700 transition shadow-md shadow-blue-500/20"
+                        >
+                          <span>🔍</span>
+                          <span>File a Lost Report First</span>
+                          <span>→</span>
+                        </Link>
+                      </>
+                    )}
                   </div>
                 ) : loadingInventory ? (
                   <div className="py-12 text-center text-slate-500 text-sm animate-pulse">
@@ -884,10 +1329,12 @@ export default function HomePage() {
                       return (
                         <div
                           key={chat._id}
-                          onClick={() => setActiveChat(chat)}
-                          className="border border-slate-200 hover:border-violet-400 rounded-2xl p-4 bg-white hover:shadow-md cursor-pointer transition flex flex-col justify-between"
+                          className="border border-slate-200 hover:border-violet-400 rounded-2xl p-4 bg-white hover:shadow-md transition flex flex-col justify-between group"
                         >
-                          <div>
+                          <div
+                            onClick={() => setActiveChat(chat)}
+                            className="cursor-pointer"
+                          >
                             <div className="flex items-center gap-3 mb-3">
                               {chat.reportImageUrl ? (
                                 <img
@@ -917,25 +1364,42 @@ export default function HomePage() {
                           </div>
 
                           <div className="mt-4 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                            <span>
-                              {chat.status === "RETURNED" ? (
-                                <span className="font-bold text-emerald-700 flex items-center gap-1">
-                                  <span>✓</span>
-                                  <span>
-                                    {isClaimant
-                                      ? `Received from ${chat.founderName}`
-                                      : `Returned to ${chat.claimantName}`}
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                title="Delete conversation"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setChatDeleteTarget(chat);
+                                }}
+                                className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                              >
+                                🗑️
+                              </button>
+                              <span>
+                                {chat.status === "RETURNED" ? (
+                                  <span className="font-bold text-emerald-700 flex items-center gap-1">
+                                    <span>✓</span>
+                                    <span>
+                                      {isClaimant
+                                        ? `Received from ${chat.founderName}`
+                                        : `Returned to ${chat.claimantName}`}
+                                    </span>
                                   </span>
-                                </span>
-                              ) : (
-                                `Status: ${chat.status}`
-                              )}
-                            </span>
-                            <span className="font-bold text-violet-600 hover:underline">
+                                ) : (
+                                  `Status: ${chat.status}`
+                                )}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setActiveChat(chat)}
+                              className="font-bold text-violet-600 hover:underline cursor-pointer"
+                            >
                               {chat.status === "RETURNED"
                                 ? "View Handover Receipt →"
                                 : "Open Details & Chat →"}
-                            </span>
+                            </button>
                           </div>
                         </div>
                       );

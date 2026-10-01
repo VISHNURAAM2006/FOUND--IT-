@@ -19,6 +19,7 @@ export async function POST(request: Request) {
       hiddenQuestion,
       hiddenAnswer,
       imageUrl,
+      visualFeatures,
       type, // "LOST" or "FOUND"
       userEmail,
       userName,
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
       hiddenQuestion: hiddenQuestion?.trim() || "",
       hiddenAnswer: hiddenAnswer?.trim() || "",
       imageUrl: imageUrl || null,
+      visualFeatures: visualFeatures || null,
       userEmail: userEmail || "anonymous",
       userName: userName || "Anonymous User",
       status: "OPEN", // "OPEN", "MATCHED", "RESOLVED"
@@ -59,9 +61,45 @@ export async function POST(request: Request) {
 
     const result = await db.collection("reports").insertOne(reportDoc);
 
+    // If a LOST complaint was filed, immediately compute AI recommendations from existing FOUND items
+    let recommendations: any[] = [];
+    if (type === "LOST") {
+      try {
+        const foundItems = await db
+          .collection("reports")
+          .find({ type: "FOUND", status: { $ne: "RETURNED" } })
+          .toArray();
+
+        const lostObj = {
+          _id: result.insertedId,
+          ...reportDoc,
+        };
+
+        const { rankMatchingFoundReports } = await import("@/lib/ai-matcher");
+        const ranked = rankMatchingFoundReports(lostObj, foundItems as any[], 0.35);
+
+        // Sanitize sensitive hidden answer before returning to claimant
+        recommendations = ranked.map((match) => {
+          const sanitizedReport = { ...match.report };
+          delete sanitizedReport.hiddenAnswer;
+          // Protect image / full description if secret question is present
+          if (sanitizedReport.hiddenQuestion && sanitizedReport.userEmail !== userEmail) {
+            sanitizedReport.isLocked = true;
+          }
+          return {
+            ...match,
+            report: sanitizedReport,
+          };
+        });
+      } catch (recErr) {
+        console.error("Error computing instant recommendations:", recErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       id: result.insertedId.toString(),
+      recommendations,
       message: `${type === "LOST" ? "Lost item complaint" : "Found item report"} submitted successfully!`,
     });
   } catch (error: unknown) {
@@ -77,25 +115,67 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id"); // specific report lookup
     const type = searchParams.get("type"); // "LOST" | "FOUND" | null
     const userEmail = searchParams.get("userEmail"); // filter by owner email
     const viewerEmail = searchParams.get("viewerEmail") || userEmail; // who is viewing
-    const checkHasLost = searchParams.get("checkHasLost"); // "1" to just check if user has a LOST report
+    const checkHasLost = searchParams.get("checkHasLost"); // "1" to check if user has active LOST reports
 
     const client = await clientPromise;
     const db = client.db("foundit_db");
 
-    // Special mode: just check if the requesting user has filed any LOST report
+    // Special mode: check active lost cases count (activeCases >= 1)
     if (checkHasLost === "1" && viewerEmail) {
-      const lostReport = await db
-        .collection("reports")
-        .findOne({ type: "LOST", userEmail: viewerEmail });
-      return NextResponse.json({ success: true, hasLostReport: !!lostReport });
+      const activeLostCount = await db.collection("reports").countDocuments({
+        type: "LOST",
+        userEmail: viewerEmail,
+        status: { $nin: ["RETURNED", "RESOLVED"] },
+      });
+      return NextResponse.json({
+        success: true,
+        hasLostReport: activeLostCount >= 1,
+        activeLostCount,
+      });
+    }
+
+    // SERVER-SIDE INVENTORY ACCESS GATE:
+    // If querying public found inventory (type is FOUND and not the user's own reports),
+    // user MUST have active lost complaints >= 1
+    if (type?.toUpperCase() === "FOUND" && !userEmail && viewerEmail) {
+      const activeLostCount = await db.collection("reports").countDocuments({
+        type: "LOST",
+        userEmail: viewerEmail,
+        status: { $nin: ["RETURNED", "RESOLVED"] },
+      });
+
+      if (activeLostCount < 1) {
+        return NextResponse.json({
+          success: true,
+          restricted: true,
+          activeLostCount: 0,
+          reports: [],
+          message:
+            "Access restricted: You must have at least 1 active lost item complaint to view the Found Inventory.",
+        });
+      }
     }
 
     const filter: Record<string, unknown> = {};
+    if (id) {
+      try {
+        filter._id = new ObjectId(id);
+      } catch {
+        filter._id = id;
+      }
+    }
     if (type) filter.type = type.toUpperCase();
     if (userEmail) filter.userEmail = userEmail;
+
+    // Returned items must NOT appear in the public inventory;
+    // they are only visible in the user's personal complaints/reports (userEmail provided) or by direct ID
+    if (!userEmail && !id) {
+      filter.status = { $ne: "RETURNED" };
+    }
 
     const rawReports = await db
       .collection("reports")

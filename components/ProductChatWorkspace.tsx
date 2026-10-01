@@ -21,7 +21,9 @@ interface Report {
   createdAt: string;
   returnedAt?: string;
   returnedBy?: string;
+  returnedByEmail?: string;
   returnedTo?: string;
+  returnedToEmail?: string;
   handoverLogMessage?: string;
 }
 
@@ -37,6 +39,8 @@ interface Chat {
   claimantName: string;
   status: string;
   lastMessage?: string;
+  closedReason?: string;
+  isHandoverWinner?: boolean;
   report?: Report;
 }
 
@@ -71,6 +75,8 @@ interface ProductChatWorkspaceProps {
   currentUserName: string;
   initialReport?: Report | null;
   onClose: () => void;
+  onChatDeleted?: (chatId: string) => void;
+  onHandoverCompleted?: () => void;
 }
 
 export default function ProductChatWorkspace({
@@ -79,6 +85,8 @@ export default function ProductChatWorkspace({
   currentUserName,
   initialReport,
   onClose,
+  onChatDeleted,
+  onHandoverCompleted,
 }: ProductChatWorkspaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
@@ -100,11 +108,48 @@ export default function ProductChatWorkspace({
   const [handoverSuccessMsg, setHandoverSuccessMsg] = useState("");
   const [copiedOtp, setCopiedOtp] = useState(false);
 
+  // Delete chat modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeletingChat, setIsDeletingChat] = useState(false);
+
+  // Incoming real-time message notification state
+  const [incomingNotification, setIncomingNotification] = useState<{
+    senderName: string;
+    content: string;
+  } | null>(null);
+  const isInitialMessagesLoad = useRef(true);
+  const knownMessageIds = useRef<Set<string>>(new Set());
+  const hasNotifiedCompletion = useRef(false);
+
   const isClaimant = currentUserEmail === chat.claimantEmail;
   const isFounder = currentUserEmail === chat.founderEmail;
   const otherPartyName = isClaimant ? chat.founderName : chat.claimantName;
   const otherPartyRole = isClaimant ? "Founder" : "Claimant";
   const otherPartyEmail = isClaimant ? chat.founderEmail : chat.claimantEmail;
+
+  // Gentle audio chime for incoming messages using Web Audio API
+  const playNotificationChime = useCallback(() => {
+    try {
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12); // A5
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch {
+      // Audio playback can be restricted by browser policy before user interaction
+    }
+  }, []);
 
   // Auto scroll
   const scrollToBottom = () => {
@@ -148,29 +193,70 @@ export default function ProductChatWorkspace({
         setHandover(data);
         if (data.handoverStatus === "COMPLETED") {
           fetchReport();
+          if (!hasNotifiedCompletion.current) {
+            hasNotifiedCompletion.current = true;
+            onHandoverCompleted?.();
+          }
         }
       }
     } catch (err) {
       console.error("Error fetching handover status:", err);
     }
-  }, [chat._id, chat.reportId, currentUserEmail, fetchReport]);
+  }, [chat._id, chat.reportId, currentUserEmail, fetchReport, onHandoverCompleted]);
 
-  // Fetch messages
+  // Fetch messages with real-time incoming notification detection
   const fetchMessages = useCallback(async () => {
     try {
       const res = await fetch(`/api/chats/${chat._id}/messages`);
       const data = await res.json();
       if (data.success && data.messages) {
-        setMessages(data.messages);
+        const newMsgs: Message[] = data.messages;
+        setMessages(newMsgs);
+
+        // Detect new incoming messages from counterpart
+        if (!isInitialMessagesLoad.current) {
+          const freshIncoming = newMsgs.filter(
+            (m) =>
+              m._id &&
+              !knownMessageIds.current.has(m._id) &&
+              m.senderEmail !== currentUserEmail
+          );
+
+          if (freshIncoming.length > 0) {
+            const latest = freshIncoming[freshIncoming.length - 1];
+            setIncomingNotification({
+              senderName: latest.senderName,
+              content: latest.content,
+            });
+            playNotificationChime();
+          }
+        } else {
+          isInitialMessagesLoad.current = false;
+        }
+
+        // Register known message IDs
+        newMsgs.forEach((m) => {
+          if (m._id) knownMessageIds.current.add(m._id);
+        });
       }
     } catch (err) {
       console.error("Error fetching chat messages:", err);
     } finally {
       setLoadingMessages(false);
     }
-  }, [chat._id]);
+  }, [chat._id, currentUserEmail, playNotificationChime]);
 
-  // Combined Polling (Messages + Handover)
+  // Auto-dismiss incoming message notification after 4.5 seconds
+  useEffect(() => {
+    if (incomingNotification) {
+      const timer = setTimeout(() => {
+        setIncomingNotification(null);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [incomingNotification]);
+
+  // Combined Polling (Messages + Handover every 2.5s)
   useEffect(() => {
     fetchMessages();
     fetchHandoverStatus();
@@ -251,7 +337,9 @@ export default function ProductChatWorkspace({
 
       const data = await res.json();
       if (data.success) {
-        setHandoverSuccessMsg("Handover initiated! A 24-hour OTP has been sent to the claimant.");
+        setHandoverSuccessMsg(
+          `Handover initiated! A 24-hour OTP has been sent to ${chat.claimantEmail}.`
+        );
         fetchHandoverStatus();
         fetchMessages();
         fetchReport();
@@ -290,19 +378,54 @@ export default function ProductChatWorkspace({
 
       const data = await res.json();
       if (data.success) {
-        setHandoverSuccessMsg(data.message || "Product marked as RETURNED successfully!");
+        setHandoverSuccessMsg(
+          data.message || "Product marked as RETURNED successfully!"
+        );
         setEnteredOtp("");
         fetchHandoverStatus();
         fetchMessages();
         fetchReport();
+        onHandoverCompleted?.();
       } else {
-        setHandoverError(data.error || "Invalid OTP. Please check the code with the claimant.");
+        setHandoverError(
+          data.error || "Invalid OTP. Please check the code with the claimant."
+        );
       }
     } catch (err) {
       console.error("Error validating OTP:", err);
       setHandoverError("Network error validating OTP.");
     } finally {
       setIsValidating(false);
+    }
+  };
+
+  // ── Delete Chat Conversation ────────────────────────────────────────────────
+  const handleDeleteChat = async () => {
+    if (isDeletingChat) return;
+    setIsDeletingChat(true);
+
+    try {
+      const res = await fetch(
+        `/api/chats?id=${chat._id}&userEmail=${encodeURIComponent(
+          currentUserEmail
+        )}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        if (onChatDeleted) {
+          onChatDeleted(chat._id);
+        }
+        onClose();
+      } else {
+        alert(data.error || "Failed to delete chat.");
+      }
+    } catch (err) {
+      console.error("Error deleting chat:", err);
+      alert("Network error. Please try again.");
+    } finally {
+      setIsDeletingChat(false);
+      setShowDeleteModal(false);
     }
   };
 
@@ -323,10 +446,58 @@ export default function ProductChatWorkspace({
 
   const displayImage = report?.imageUrl || chat.reportImageUrl;
   const isReturned =
-    report?.status === "RETURNED" || handover.handoverStatus === "COMPLETED";
+    report?.status === "RETURNED" ||
+    chat.status === "RETURNED" ||
+    handover.handoverStatus === "COMPLETED";
+
+  const isClosedForOtherClaimant =
+    (chat.closedReason === "RETURNED_TO_OTHER_CLAIMANT" ||
+      (report?.returnedToEmail &&
+        !isFounder &&
+        report.returnedToEmail !== currentUserEmail)) &&
+    isReturned;
+
+  const isFounderViewingOtherClaimant =
+    isFounder &&
+    report?.returnedToEmail &&
+    report.returnedToEmail !== chat.claimantEmail &&
+    isReturned;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+      {/* ── Confirmation Modal: Delete Chat ─────────────────────────────────── */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 text-center animate-in fade-in zoom-in-95">
+            <div className="text-4xl mb-3">🗑️</div>
+            <h3 className="text-lg font-bold text-slate-900 mb-1">
+              Delete Conversation?
+            </h3>
+            <p className="text-xs text-slate-600 mb-5 leading-relaxed">
+              Are you sure you want to delete this chat with{" "}
+              <strong>{otherPartyName}</strong>? All conversation messages will
+              be permanently deleted.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeletingChat}
+                className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-100 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteChat}
+                disabled={isDeletingChat}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs transition disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isDeletingChat ? "Deleting..." : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-3xl max-w-6xl w-full h-[96vh] sm:h-[760px] shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* ── Top Workspace Bar ─────────────────────────────────────────────── */}
         <div className="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between border-b border-slate-800">
@@ -351,12 +522,22 @@ export default function ProductChatWorkspace({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition text-sm font-bold"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              title="Delete Chat"
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 border border-slate-700 transition text-xs font-semibold flex items-center gap-1.5"
+            >
+              <span>🗑️</span>
+              <span className="hidden sm:inline">Delete Chat</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition text-sm font-bold"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* ── Side-by-Side Body ──────────────────────────────────────────────── */}
@@ -440,55 +621,92 @@ export default function ProductChatWorkspace({
                 </div>
               )}
 
-              {/* ── STATE 1: COMPLETED / RETURNED ── */}
+              {/* ── STATE 1: COMPLETED / RETURNED (Personalized History) ── */}
               {isReturned ? (
-                <div className="bg-emerald-50/90 border border-emerald-300 rounded-2xl p-4 text-center space-y-2.5">
-                  <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl font-black mx-auto">
-                    ✓
-                  </div>
-                  <h5 className="font-extrabold text-sm text-emerald-950">
-                    Handover Complete &amp; Verified
-                  </h5>
-                  <div className="bg-white p-3 rounded-xl border border-emerald-200 text-xs text-left space-y-1 shadow-xs">
-                    {isFounder ? (
-                      <>
-                        <p className="text-slate-500 font-medium text-[11px]">
-                          You returned this item to:
-                        </p>
-                        <p className="text-slate-900 font-bold text-sm">
-                          {chat.claimantName}
-                        </p>
-                        <p className="text-slate-500 text-xs">
-                          {chat.claimantEmail}
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-slate-500 font-medium text-[11px]">
-                          You received this item from:
-                        </p>
-                        <p className="text-slate-900 font-bold text-sm">
-                          {chat.founderName}
-                        </p>
-                        <p className="text-slate-500 text-xs">
-                          {chat.founderEmail}
-                        </p>
-                      </>
+                isClosedForOtherClaimant ? (
+                  <div className="bg-amber-50/90 border border-amber-300 rounded-2xl p-4 text-center space-y-2.5">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center text-xl font-black mx-auto">
+                      🔒
+                    </div>
+                    <h5 className="font-extrabold text-sm text-amber-950">
+                      Product Returned to Verified Owner
+                    </h5>
+                    <p className="text-xs text-amber-800 leading-relaxed">
+                      The founder has officially verified ownership and returned this product to its owner.
+                      This conversation has been closed to protect user privacy.
+                    </p>
+                    {report?.returnedAt && (
+                      <p className="text-[11px] text-amber-700/80 pt-1.5 border-t border-amber-200">
+                        Resolved on:{" "}
+                        {new Date(report.returnedAt).toLocaleString("en-IN", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
+                      </p>
                     )}
-                    <p className="text-[11px] text-slate-400 pt-1.5 border-t border-slate-100">
-                      Handover Timestamp:{" "}
-                      {report?.returnedAt
-                        ? new Date(report.returnedAt).toLocaleString("en-IN", {
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                          })
-                        : new Date().toLocaleString("en-IN", {
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                          })}
+                  </div>
+                ) : isFounderViewingOtherClaimant ? (
+                  <div className="bg-slate-100 border border-slate-300 rounded-2xl p-4 text-center space-y-2">
+                    <div className="w-9 h-9 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-lg font-black mx-auto">
+                      🔒
+                    </div>
+                    <h5 className="font-extrabold text-xs text-slate-800">
+                      Item Returned to {report?.returnedTo || "Verified Owner"}
+                    </h5>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      You officially handed over this item to {report?.returnedTo} ({report?.returnedToEmail}).
+                      This chat with {chat.claimantName} has been closed automatically.
                     </p>
                   </div>
-                </div>
+                ) : (
+                  <div className="bg-emerald-50/90 border border-emerald-300 rounded-2xl p-4 text-center space-y-2.5">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl font-black mx-auto">
+                      ✓
+                    </div>
+                    <h5 className="font-extrabold text-sm text-emerald-950">
+                      Handover Complete &amp; Verified
+                    </h5>
+                    <div className="bg-white p-3 rounded-xl border border-emerald-200 text-xs text-left space-y-1 shadow-xs">
+                      {isFounder ? (
+                        <>
+                          <p className="text-slate-500 font-medium text-[11px]">
+                            You returned this item to:
+                          </p>
+                          <p className="text-slate-900 font-bold text-sm">
+                            {chat.claimantName}
+                          </p>
+                          <p className="text-slate-500 text-xs">
+                            {chat.claimantEmail}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-slate-500 font-medium text-[11px]">
+                            You received this item from:
+                          </p>
+                          <p className="text-slate-900 font-bold text-sm">
+                            {chat.founderName}
+                          </p>
+                          <p className="text-slate-500 text-xs">
+                            {chat.founderEmail}
+                          </p>
+                        </>
+                      )}
+                      <p className="text-[11px] text-slate-400 pt-1.5 border-t border-slate-100">
+                        Handover Timestamp:{" "}
+                        {report?.returnedAt
+                          ? new Date(report.returnedAt).toLocaleString("en-IN", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })
+                          : new Date().toLocaleString("en-IN", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}
+                      </p>
+                    </div>
+                  </div>
+                )
               ) : (
                 <>
                   {/* ── STATE 2: PENDING (24h OTP ACTIVE) ── */}
@@ -502,7 +720,8 @@ export default function ProductChatWorkspace({
                               🔑 Your 24-Hour Handover OTP
                             </span>
                             <span className="text-[11px] text-amber-800 font-medium block">
-                              📧 Sent to your logged-in email: <strong>{chat.claimantEmail}</strong>
+                              📧 Sent to your logged-in email:{" "}
+                              <strong>{chat.claimantEmail}</strong>
                             </span>
                             <div className="flex items-center justify-center gap-1.5 py-1">
                               {handover.otp ? (
@@ -529,17 +748,22 @@ export default function ProductChatWorkspace({
                           </div>
 
                           <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 leading-relaxed">
-                            <strong>In-Person Handover:</strong> Show or read this 6-digit OTP to{" "}
-                            <strong>{chat.founderName}</strong> when they hand over your item. The founder will validate it on their device to complete the return.
+                            <strong>In-Person Handover:</strong> Show or read this
+                            6-digit OTP to <strong>{chat.founderName}</strong> when
+                            they hand over your item. The founder will validate it on
+                            their device to complete the return.
                           </div>
 
                           <p className="text-[11px] text-slate-400 text-center">
                             Valid for 24 hours (Expires:{" "}
                             {handover.expiresAt
-                              ? new Date(handover.expiresAt).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
+                              ? new Date(handover.expiresAt).toLocaleTimeString(
+                                  [],
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )
                               : "in 24 hours"}
                             )
                           </p>
@@ -550,7 +774,13 @@ export default function ProductChatWorkspace({
                       {isFounder && (
                         <form onSubmit={handleVerifyOtp} className="space-y-3">
                           <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 leading-relaxed">
-                            <strong>Ask {chat.claimantName} for their 6-digit OTP</strong> sent to their email (<strong>{chat.claimantEmail}</strong>) or shown on their screen, then enter it below to confirm that you have physically returned the item.
+                            <strong>
+                              Ask {chat.claimantName} for their 6-digit OTP
+                            </strong>{" "}
+                            sent to their email (
+                            <strong>{chat.claimantEmail}</strong>) or shown on
+                            their screen, then enter it below to confirm that you
+                            have physically returned the item.
                           </div>
 
                           <div>
@@ -593,7 +823,10 @@ export default function ProductChatWorkspace({
                       {isFounder ? (
                         <>
                           <p className="text-xs text-slate-600 leading-relaxed">
-                            Once you have confirmed the user in the chat and are ready to meet on campus, click below to initiate the handover. This generates a secure 24-hour OTP for the claimant.
+                            Once you have confirmed the user in the chat and are
+                            ready to meet on campus, click below to initiate the
+                            handover. This generates a secure 24-hour OTP for the
+                            claimant.
                           </p>
                           <button
                             type="button"
@@ -613,7 +846,10 @@ export default function ProductChatWorkspace({
                         </>
                       ) : (
                         <p className="text-xs text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
-                          Discuss meeting place and time with <strong>{chat.founderName}</strong> in the chat. When meeting on campus, the founder will initiate handover and your 6-digit verification code will appear here.
+                          Discuss meeting place and time with{" "}
+                          <strong>{chat.founderName}</strong> in the chat. When
+                          meeting on campus, the founder will initiate handover
+                          and your 6-digit verification code will appear here.
                         </p>
                       )}
                     </div>
@@ -702,7 +938,41 @@ export default function ProductChatWorkspace({
           {/* ══════════════════════════════════════════════════════════════════
               RIGHT SIDE: Live Chat Box (7 columns on large screens)
              ══════════════════════════════════════════════════════════════════ */}
-          <div className="lg:col-span-7 flex flex-col h-full bg-white">
+          <div className="lg:col-span-7 flex flex-col h-full bg-white relative">
+            {/* ── Floating In-Chat Real-Time Message Notification ────────────── */}
+            {incomingNotification && (
+              <div className="absolute top-16 left-4 right-4 z-30 flex justify-center animate-in slide-in-from-top-3 fade-in duration-200">
+                <div
+                  onClick={() => setIncomingNotification(null)}
+                  className="bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-xl border border-blue-500/40 flex items-center gap-3 cursor-pointer hover:bg-slate-800 transition max-w-md w-full"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                    💬
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-bold text-blue-300 flex items-center gap-1">
+                      <span>🔔 New message from</span>
+                      <span className="text-white font-extrabold">
+                        {incomingNotification.senderName}
+                      </span>
+                    </p>
+                    <p className="text-xs text-slate-200 truncate font-medium">
+                      &quot;{incomingNotification.content}&quot;
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIncomingNotification(null);
+                    }}
+                    className="text-slate-400 hover:text-white p-1 text-sm font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Chat Top Subheader */}
             <div className="px-5 py-3 border-b border-slate-200 bg-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">

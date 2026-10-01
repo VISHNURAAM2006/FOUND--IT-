@@ -288,7 +288,7 @@ export async function POST(request: Request) {
         }
       );
 
-      // 2. Update report status to RETURNED and save audit log
+      // 2. Update found report status to RETURNED and save audit log
       await db.collection("reports").updateOne(
         repQuery,
         {
@@ -300,24 +300,82 @@ export async function POST(request: Request) {
             returnedTo: chat.claimantName,
             returnedToEmail: chat.claimantEmail,
             handoverLogMessage: logMessage,
+            updatedAt: completedAt,
           },
         }
       );
 
-      // 3. Update chat status
+      // 2b. CRITICAL: Close the Loser's (Claimant's) matching LOST case so BOTH sides' cases are marked RETURNED!
+      try {
+        const claimantLostFilter: any = {
+          userEmail: chat.claimantEmail,
+          type: "LOST",
+          status: { $nin: ["RETURNED", "RESOLVED"] },
+        };
+
+        // Find candidate matching lost reports (by category or title keyword)
+        const matchingLostReports = await db.collection("reports").find({
+          ...claimantLostFilter,
+          $or: [
+            { category: report.category },
+            { category: { $regex: new RegExp(`^${report.category}$`, "i") } },
+            { title: { $regex: new RegExp(report.category || "", "i") } },
+            { brand: report.brand || "___NO_BRAND___" },
+          ],
+        }).toArray();
+
+        let targetLostReportIds: ObjectId[] = [];
+        if (matchingLostReports.length > 0) {
+          targetLostReportIds = matchingLostReports.map((r) => r._id);
+        } else {
+          // If no direct category match, find claimant's most recent open lost report
+          const latestLost = await db
+            .collection("reports")
+            .find(claimantLostFilter)
+            .sort({ createdAt: -1 })
+            .limit(1)
+            .toArray();
+          if (latestLost.length > 0) {
+            targetLostReportIds = [latestLost[0]._id];
+          }
+        }
+
+        if (targetLostReportIds.length > 0) {
+          await db.collection("reports").updateMany(
+            { _id: { $in: targetLostReportIds } },
+            {
+              $set: {
+                status: "RETURNED",
+                returnedAt: completedAt,
+                returnedBy: chat.founderName,
+                returnedByEmail: chat.founderEmail,
+                returnedTo: chat.claimantName,
+                returnedToEmail: chat.claimantEmail,
+                handoverLogMessage: logMessage,
+                updatedAt: completedAt,
+              },
+            }
+          );
+        }
+      } catch (loserCloseErr) {
+        console.error("Error closing loser's lost report:", loserCloseErr);
+      }
+
+      // 3. Update the winning chat status
       await db.collection("chats").updateOne(
         chatQuery,
         {
           $set: {
             status: "RETURNED",
             handoverStatus: "COMPLETED",
+            isHandoverWinner: true,
             lastMessage: `✅ Item returned to ${chat.claimantName}`,
             lastMessageAt: completedAt,
           },
         }
       );
 
-      // 4. Insert handover completion notice in chat
+      // 4. Insert handover completion notice in winning chat
       await db.collection("messages").insertOne({
         chatId: chatId.toString(),
         senderEmail: "system@foundit.campus",
@@ -325,6 +383,46 @@ export async function POST(request: Request) {
         content: `🎉 Handover Confirmed! ${chat.founderName} officially returned '${report.title}' to ${chat.claimantName}. Item is now marked as RETURNED.`,
         createdAt: completedAt,
       });
+
+      // 5. CRITICAL: Close all other chats for the SAME product across several claimants
+      try {
+        const otherChats = await db.collection("chats").find({
+          reportId: reportId.toString(),
+          _id: { $ne: chat._id },
+        }).toArray();
+
+        if (otherChats.length > 0) {
+          await db.collection("chats").updateMany(
+            {
+              reportId: reportId.toString(),
+              _id: { $ne: chat._id },
+            },
+            {
+              $set: {
+                status: "RETURNED",
+                handoverStatus: "CLOSED",
+                isHandoverWinner: false,
+                closedReason: "RETURNED_TO_OTHER_CLAIMANT",
+                lastMessage: "🔒 Item returned to verified owner - conversation closed",
+                lastMessageAt: completedAt,
+              },
+            }
+          );
+
+          // Insert system closure notices into each other chat thread
+          for (const otherChat of otherChats) {
+            await db.collection("messages").insertOne({
+              chatId: otherChat._id.toString(),
+              senderEmail: "system@foundit.campus",
+              senderName: "Handover Protocol",
+              content: `🔒 Notice: '${report.title}' has been officially verified and returned to another claimant. This conversation has been closed for privacy.`,
+              createdAt: completedAt,
+            });
+          }
+        }
+      } catch (closeErr) {
+        console.error("Error closing other claimant chats for product:", closeErr);
+      }
 
       return NextResponse.json({
         success: true,
