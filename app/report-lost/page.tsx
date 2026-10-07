@@ -8,6 +8,9 @@ import ImageUpload from "@/components/ImageUpload";
 import { VisualFeatures, MatchResult } from "@/lib/ai-matcher";
 import AiMatchCard from "@/components/AiMatchCard";
 import VerificationModal from "@/components/VerificationModal";
+import CampusLocationSelect from "@/components/CampusLocationSelect";
+import SpeechRecognitionButton from "@/components/SpeechRecognitionButton";
+import AiLossTrajectoryModal from "@/components/AiLossTrajectoryModal";
 
 export default function ReportLostPage() {
   const { data: session, status } = useSession();
@@ -32,6 +35,47 @@ export default function ReportLostPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [recommendations, setRecommendations] = useState<MatchResult[]>([]);
   const [verifyingReport, setVerifyingReport] = useState<any | null>(null);
+
+  // AI Loss Trajectory State
+  const [isAnalyzingLoss, setIsAnalyzingLoss] = useState(false);
+  const [lossAnalysis, setLossAnalysis] = useState<any | null>(null);
+
+  const handleAnalyzeLossTrajectory = async () => {
+    if (!formData.title.trim()) {
+      alert("Please provide the Item Title / Name first so AI can analyze its physical characteristics.");
+      return;
+    }
+    if (!formData.location.trim()) {
+      alert("Please select the Campus Location Last Seen so AI can analyze the spatial zone.");
+      return;
+    }
+
+    setIsAnalyzingLoss(true);
+    try {
+      const res = await fetch("/api/analyze-loss-scenario", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: formData.title,
+          category,
+          location: formData.location,
+          description: formData.description,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setLossAnalysis(data.analysis);
+      } else {
+        alert(data.error || "Failed to analyze loss scenario.");
+      }
+    } catch (err) {
+      console.error("Loss analysis error:", err);
+      alert("Network error while generating loss trajectory.");
+    } finally {
+      setIsAnalyzingLoss(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +132,8 @@ export default function ReportLostPage() {
     setVisualFeatures(null);
     setRecommendations([]);
     setVerifyingReport(null);
+    setLossAnalysis(null);
+    setIsAnalyzingLoss(false);
     setSubmitSuccess(false);
     setErrorMessage("");
   };
@@ -178,6 +224,16 @@ export default function ReportLostPage() {
               )
             );
           }}
+        />
+      )}
+
+      {/* AI Loss Trajectory Scenario Modal */}
+      {lossAnalysis && (
+        <AiLossTrajectoryModal
+          itemTitle={formData.title || "Lost Item"}
+          location={formData.location || "Campus"}
+          analysis={lossAnalysis}
+          onClose={() => setLossAnalysis(null)}
         />
       )}
 
@@ -393,20 +449,13 @@ export default function ReportLostPage() {
                 </div>
               </div>
 
-              {/* Location Lost */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-800 mb-1.5">
-                  Location Last Seen <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Central Library 2nd Floor, Basketball Court, Cafeteria"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-xs"
-                />
-              </div>
+              {/* Location Lost using Campus KML Markers */}
+              <CampusLocationSelect
+                value={formData.location}
+                onChange={(loc) => setFormData({ ...formData, location: loc })}
+                label="Location Last Seen on Campus"
+                required={true}
+              />
 
               {/* Image Upload Feature with AI Visual Embedding */}
               <ImageUpload
@@ -435,18 +484,65 @@ export default function ReportLostPage() {
                 />
               </div>
 
-              {/* Description */}
+              {/* Description with Bilingual Voice Recognition (Tamil & English) */}
               <div>
-                <label className="block text-sm font-semibold text-slate-800 mb-1.5">
-                  Detailed Description &amp; Contents
-                </label>
+                <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+                  <label className="block text-sm font-semibold text-slate-800">
+                    Detailed Description &amp; Contents
+                  </label>
+                  <SpeechRecognitionButton
+                    currentText={formData.description}
+                    onTranscript={(text) =>
+                      setFormData({ ...formData, description: text })
+                    }
+                  />
+                </div>
                 <textarea
                   rows={4}
-                  placeholder="Describe unique details (e.g. scratches on left side, case design, stickers, keychain attached, contents inside)."
+                  placeholder="Describe unique details (e.g. scratches on left side, case design, stickers, keychain attached, contents inside). Tap the microphone above to dictate in English or தமிழ் (Tamil)!"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-xs"
                 />
+              </div>
+
+              {/* AI Loss Trajectory Prediction Simulator */}
+              <div className="p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border border-indigo-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xl shrink-0 shadow-xs shadow-indigo-300">
+                    🧠
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-indigo-950">
+                        AI Loss Trajectory &amp; Scenario Simulator
+                      </span>
+                      <span className="text-[10px] bg-indigo-600 text-white font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        Predict
+                      </span>
+                    </div>
+                    <p className="text-xs text-indigo-800/80 mt-0.5 max-w-md">
+                      Simulate how &amp; where your item could have been lost based on item physics and campus hotspots even before a found report is filed.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAnalyzeLossTrajectory}
+                  disabled={isAnalyzingLoss}
+                  className="shrink-0 w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isAnalyzingLoss ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Simulating Scenarios...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>✨ Predict Loss Scenarios</span>
+                    </>
+                  )}
+                </button>
               </div>
 
               {/* Submit Button */}

@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import ImageUpload from "@/components/ImageUpload";
 import { VisualFeatures } from "@/lib/ai-matcher";
+import CampusLocationSelect from "@/components/CampusLocationSelect";
+import SpeechRecognitionButton from "@/components/SpeechRecognitionButton";
 
 export default function ReportFoundPage() {
   const { data: session, status } = useSession();
@@ -274,20 +276,13 @@ export default function ReportFoundPage() {
                 </div>
               </div>
 
-              {/* Location Found */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-800 mb-1.5">
-                  Location Found on Campus <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Central Library 2nd Floor, Table #14"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm"
-                />
-              </div>
+              {/* Location Found using Campus KML Markers */}
+              <CampusLocationSelect
+                value={formData.location}
+                onChange={(loc) => setFormData({ ...formData, location: loc })}
+                label="Location Found on Campus"
+                required={true}
+              />
 
               {/* Image Upload Feature */}
               <ImageUpload
@@ -339,14 +334,22 @@ export default function ReportFoundPage() {
                 </div>
               </div>
 
-              {/* Description */}
+              {/* Description / Additional Notes with Bilingual Voice Recognition */}
               <div>
-                <label className="block text-sm font-semibold text-slate-800 mb-1.5">
-                  Additional Notes / Details
-                </label>
+                <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+                  <label className="block text-sm font-semibold text-slate-800">
+                    Additional Notes / Details
+                  </label>
+                  <SpeechRecognitionButton
+                    currentText={formData.description}
+                    onTranscript={(text) =>
+                      setFormData({ ...formData, description: text })
+                    }
+                  />
+                </div>
                 <textarea
                   rows={3}
-                  placeholder="Any other details about how or where it was found, custody details, etc."
+                  placeholder="Any other details about how or where it was found, custody details, etc. Tap the microphone above to speak in English or தமிழ் (Tamil)!"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder-slate-400 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm"

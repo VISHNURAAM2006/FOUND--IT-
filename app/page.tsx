@@ -338,6 +338,197 @@ function ReportCard({
   );
 }
 
+// ─── Interactive & Animative Login Screen ──────────────────────────────────────
+function InteractiveLoginScreen({ onSignIn }: { onSignIn: () => void }) {
+  const [activeFeature, setActiveFeature] = useState<number>(0);
+
+  const features = [
+    {
+      icon: "🔍",
+      title: "Smart AI Visual Match",
+      tag: "Vision & CLIP AI",
+      tagColor: "bg-blue-100 text-blue-700",
+      description:
+        "Upload a photo of your lost belonging. Multi-modal AI instantly compares visual features with founder submissions across campus.",
+    },
+    {
+      icon: "🔐",
+      title: "Secret Question Shield",
+      tag: "Zero False Claims",
+      tagColor: "bg-emerald-100 text-emerald-800",
+      description:
+        "Finders lock sensitive identifying marks behind confidential security questions. Only the genuine owner can answer and unlock details.",
+    },
+    {
+      icon: "🤝",
+      title: "Direct Chat & 24h OTP",
+      tag: "Secure Handover",
+      tagColor: "bg-violet-100 text-violet-800",
+      description:
+        "Chat in real time directly with the finder, coordinate a safe campus meeting spot, and verify in-person handoff with a single-use 24-hour OTP code.",
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-slate-50 relative overflow-hidden flex flex-col justify-center items-center px-4 py-10 selection:bg-blue-500 selection:text-white">
+      {/* ── Background Decorative Dot Grid ── */}
+      <div className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:24px_24px] opacity-70 pointer-events-none" />
+
+      {/* ── Ambient Glowing Colored Orbs ── */}
+      <div className="absolute -top-36 -left-36 w-96 h-96 bg-blue-400/25 rounded-full blur-3xl pointer-events-none animate-pulse-glow" />
+      <div
+        className="absolute -bottom-36 -right-36 w-96 h-96 bg-violet-400/25 rounded-full blur-3xl pointer-events-none animate-pulse-glow"
+        style={{ animationDelay: "2.5s" }}
+      />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+
+      {/* ── CAMPUS MOTTO (Replaces the purple box) ── */}
+      <div className="relative z-10 mb-6 text-center animate-in fade-in slide-in-from-top-3 duration-500">
+        <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-md shadow-slate-200/60 hover:shadow-lg hover:border-blue-300 hover:scale-105 transition-all duration-300 group cursor-default">
+          <span className="flex h-2.5 w-2.5 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600" />
+          </span>
+          <span className="bg-gradient-to-r from-blue-700 via-indigo-700 to-violet-700 bg-clip-text text-transparent font-black tracking-wider text-[11px] uppercase">
+            CAMPUS MOTTO
+          </span>
+          <span className="text-slate-300">|</span>
+          <span className="text-slate-800 font-extrabold tracking-tight text-xs sm:text-sm">
+            &ldquo;Every Lost Item Has a Way Back Home.&rdquo;
+          </span>
+          <span className="text-amber-500 animate-pulse text-sm">✨</span>
+        </div>
+        <p className="text-[11px] text-slate-500 mt-1.5 font-medium tracking-wide">
+          Reconnecting Belongings • Rebuilding Trust Across Campus
+        </p>
+      </div>
+
+      {/* ── MAIN INTERACTIVE HERO CARD ── */}
+      <div className="relative z-10 max-w-lg w-full bg-white/90 backdrop-blur-xl rounded-[32px] shadow-2xl shadow-slate-300/60 border border-white/80 p-7 sm:p-9 text-center overflow-hidden transition-all duration-300 hover:shadow-slate-300/80">
+        {/* Subtle Top Gradient Accent Rim */}
+        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600" />
+
+        {/* ── Brand Logo with Pulsing Aura Ring ── */}
+        <div className="relative inline-flex items-center justify-center mb-4 group cursor-pointer">
+          <div className="absolute -inset-2 bg-gradient-to-r from-blue-600 to-violet-600 rounded-3xl blur-md opacity-30 group-hover:opacity-70 transition duration-500 animate-pulse-glow" />
+          <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-white flex items-center justify-center text-3xl font-black shadow-lg shadow-blue-500/30 transform group-hover:scale-105 group-hover:rotate-3 transition duration-300">
+            F!
+          </div>
+        </div>
+
+        <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-1.5">
+          Found!t
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-600 mb-6 font-medium leading-relaxed max-w-sm mx-auto">
+          College Campus Lost &amp; Found Platform
+          <br />
+          <span className="text-[11px] text-slate-400">
+            Where lost student belongings find their way back home.
+          </span>
+        </p>
+
+        {/* ── INTERACTIVE 3-FEATURE SELECTOR ── */}
+        <div className="space-y-2.5 mb-7 text-left">
+          {features.map((feat, idx) => {
+            const isSelected = activeFeature === idx;
+            return (
+              <div
+                key={feat.title}
+                onClick={() => setActiveFeature(idx)}
+                onMouseEnter={() => setActiveFeature(idx)}
+                className={`group p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer ${
+                  isSelected
+                    ? "bg-slate-50 border-blue-400 shadow-xs ring-1 ring-blue-400/30"
+                    : "bg-white/60 border-slate-200/80 hover:bg-slate-50/70 hover:border-slate-300"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg group-hover:scale-110 transition-transform duration-200">
+                      {feat.icon}
+                    </span>
+                    <span className="font-bold text-xs sm:text-sm text-slate-900">
+                      {feat.title}
+                    </span>
+                  </div>
+                  <span
+                    className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 transition-colors ${feat.tagColor}`}
+                  >
+                    {feat.tag}
+                  </span>
+                </div>
+                <p
+                  className={`text-xs leading-relaxed transition-all duration-200 pl-7 ${
+                    isSelected ? "text-slate-600" : "text-slate-400 line-clamp-1"
+                  }`}
+                >
+                  {feat.description}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── GOOGLE SIGN-IN BUTTON ── */}
+        <button
+          onClick={onSignIn}
+          className="group relative w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold active:scale-[0.98] transition-all duration-200 shadow-xl shadow-slate-900/25 hover:shadow-indigo-500/25 overflow-hidden cursor-pointer"
+        >
+          {/* Shimmer reflection highlight */}
+          <div className="absolute inset-0 -translate-x-full group-hover:animate-shimmer bg-gradient-to-r from-transparent via-white/15 to-transparent pointer-events-none" />
+
+          {/* Google G SVG */}
+          <div className="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform duration-200">
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+              />
+            </svg>
+          </div>
+          <span className="text-sm font-extrabold tracking-tight">
+            Sign in with Campus Google
+          </span>
+          <span className="text-xs text-slate-400 group-hover:translate-x-1 transition-transform">
+            →
+          </span>
+        </button>
+
+        {/* ── Trust Pillars & Security Footer ── */}
+        <div className="mt-5 pt-4 border-t border-slate-100/80 flex items-center justify-center gap-3 text-[11px] text-slate-400 flex-wrap">
+          <span className="flex items-center gap-1">
+            <span className="text-emerald-500">✓</span> Verified Campus Accounts
+          </span>
+          <span>•</span>
+          <span className="flex items-center gap-1">
+            <span className="text-blue-500">🔒</span> Zero False Claims
+          </span>
+          <span>•</span>
+          <span className="flex items-center gap-1">
+            <span className="text-violet-500">⚡</span> Live Alerts
+          </span>
+        </div>
+      </div>
+
+      <p className="relative z-10 mt-6 text-[11px] text-slate-400 text-center font-medium">
+        Secured with College Google Workspace Authentication
+      </p>
+    </div>
+  );
+}
+
 // ─── Main Home Page ────────────────────────────────────────────────────────────
 export default function HomePage() {
   const { data: session, status } = useSession();
@@ -637,81 +828,7 @@ export default function HomePage() {
   // NOT LOGGED IN → Login Screen
   // ────────────────────────────────────────────────────────────────────────────
   if (!session) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex flex-col justify-center items-center px-4 py-12">
-        {/* ── Chat & Handover Notification Alert Bar near Login ── */}
-        <div className="max-w-md w-full mb-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-2xl p-4 shadow-lg shadow-violet-500/20 flex items-center gap-3 animate-in fade-in slide-in-from-top-3">
-          <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-xl shrink-0">
-            🔔
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-black uppercase tracking-wider text-violet-200">
-                Live Chat Notifications
-              </span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            </div>
-            <p className="text-xs text-white/95 mt-0.5 leading-snug">
-              Sign in with your campus Google account to receive real-time direct chats, replies from finders, and secure return OTP alerts.
-            </p>
-          </div>
-        </div>
-
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-slate-200 p-8 sm:p-10 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 text-white text-3xl font-black mb-5 shadow-lg shadow-blue-500/30">
-            F!
-          </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
-            Found!t
-          </h1>
-          <p className="text-slate-600 text-sm mb-8 leading-relaxed">
-            College Campus Lost &amp; Found Platform
-            <br />
-            <span className="text-xs text-slate-400">
-              Locate lost belongings or report found items safely.
-            </span>
-          </p>
-
-          <div className="space-y-3 mb-8 text-left text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200/70">
-            <div className="flex items-center gap-2.5">
-              <span className="text-blue-600 font-bold text-base">🔍</span>
-              <span>
-                <strong>Report Lost Items</strong> with photos &amp; location
-              </span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <span className="text-emerald-600 font-bold text-base">🎁</span>
-              <span>
-                <strong>Report Found Items</strong> with secret verification
-              </span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <span className="text-violet-600 font-bold text-base">💬</span>
-              <span>
-                <strong>Direct Handover Chat</strong> with attached product details
-              </span>
-            </div>
-          </div>
-
-          <button
-            onClick={() => signIn("google")}
-            className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 active:scale-[0.99] transition shadow-md shadow-slate-900/20"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-            </svg>
-            <span>Sign in with Google</span>
-          </button>
-
-          <p className="mt-5 text-[11px] text-slate-400">
-            Sign in with your campus Google account to access your reports
-          </p>
-        </div>
-      </div>
-    );
+    return <InteractiveLoginScreen onSignIn={() => signIn("google")} />;
   }
 
   // ────────────────────────────────────────────────────────────────────────────
