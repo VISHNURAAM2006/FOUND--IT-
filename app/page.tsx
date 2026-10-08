@@ -178,22 +178,22 @@ function ReportCard({
   const isLockedFound = report.type === "FOUND" && !isOwner && report.isLocked !== false;
 
   return (
-    <div className="border border-slate-200 rounded-2xl p-4 bg-white hover:shadow-md transition flex flex-col justify-between">
+    <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 bg-white dark:bg-slate-900 card-hover-effect hover:shadow-lg transition flex flex-col justify-between">
       <div>
         {/* Image Display */}
         {report.imageUrl && !isLockedFound ? (
           <img
             src={report.imageUrl}
             alt={report.title}
-            className="w-full h-36 object-cover rounded-xl mb-3 border border-slate-200"
+            className="w-full h-36 object-cover rounded-xl mb-3 border border-slate-200 dark:border-slate-700"
           />
         ) : isLockedFound ? (
-          <div className="w-full h-36 rounded-xl mb-3 bg-slate-100 border border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 p-3 text-center">
+          <div className="w-full h-36 rounded-xl mb-3 bg-slate-100 dark:bg-slate-800/80 border border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 p-3 text-center">
             <span className="text-2xl mb-1">🔒</span>
-            <span className="text-xs font-semibold text-slate-600">
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
               Details Locked
             </span>
-            <span className="text-[10px] text-slate-400">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500">
               Answer secret question to unlock
             </span>
           </div>
@@ -206,49 +206,49 @@ function ReportCard({
               {report.type === "LOST" ? "✓ RECEIVED BACK" : "✓ RETURNED TO OWNER"}
             </span>
           ) : report.status === "HANDOVER_PENDING" ? (
-            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
               📦 HANDOVER PENDING
             </span>
           ) : (
             <span
               className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
                 report.type === "LOST"
-                  ? "bg-blue-100 text-blue-700"
-                  : "bg-emerald-100 text-emerald-700"
+                  ? "bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300"
+                  : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
               }`}
             >
               {report.type}
             </span>
           )}
-          <span className="text-xs text-slate-500 font-medium">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
             {report.category}
           </span>
           {isOwner && (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 ml-auto">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 ml-auto">
               Mine
             </span>
           )}
           {!isOwner && report.type === "FOUND" && !isLockedFound && report.status !== "RETURNED" && (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 ml-auto">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 ml-auto">
               🔓 Unlocked
             </span>
           )}
         </div>
 
         {/* Title & Info */}
-        <h4 className="font-bold text-slate-900 text-sm line-clamp-2 mb-1">
+        <h4 className="font-bold text-slate-900 dark:text-white text-sm line-clamp-2 mb-1">
           {report.title}
         </h4>
 
         {report.location && (
-          <p className="text-xs text-slate-600 flex items-center gap-1 mb-1">
+          <p className="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-1 mb-1">
             <span>📍</span>
             <span className="line-clamp-1">{report.location}</span>
           </p>
         )}
 
         {report.color && !isLockedFound && (
-          <p className="text-xs text-slate-500 flex items-center gap-1 mb-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-1">
             <span>🎨</span>
             <span className="line-clamp-1">{report.color}</span>
           </p>
@@ -256,14 +256,14 @@ function ReportCard({
 
         {/* Secret Question Teaser */}
         {isLockedFound && report.hiddenQuestion && (
-          <div className="mt-2.5 p-2.5 bg-amber-50 rounded-xl border border-amber-200/80 text-[11px] text-amber-900">
+          <div className="mt-2.5 p-2.5 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200/80 dark:border-amber-900/60 text-[11px] text-amber-900 dark:text-amber-200">
             <span className="font-bold">Secret Question:</span> &quot;{report.hiddenQuestion}&quot;
           </div>
         )}
 
         {/* Returned Confirmation Notice */}
         {report.status === "RETURNED" && (
-          <div className="mt-2.5 p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 font-medium flex items-center gap-1.5">
+          <div className="mt-2.5 p-2.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-900 text-xs text-emerald-900 dark:text-emerald-200 font-medium flex items-center gap-1.5">
             <span>✓</span>
             <span className="truncate">
               {report.type === "LOST"
@@ -275,8 +275,8 @@ function ReportCard({
       </div>
 
       {/* Footer / Actions */}
-      <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
-        <div className="text-[11px] text-slate-400 flex items-center justify-between">
+      <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+        <div className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center justify-between">
           <span>Status: {report.status}</span>
           <span>
             {report.createdAt
@@ -339,7 +339,15 @@ function ReportCard({
 }
 
 // ─── Interactive & Animative Login Screen ──────────────────────────────────────
-function InteractiveLoginScreen({ onSignIn }: { onSignIn: () => void }) {
+function InteractiveLoginScreen({
+  onSignIn,
+  isDarkMode = false,
+  onToggleTheme,
+}: {
+  onSignIn: () => void;
+  isDarkMode?: boolean;
+  onToggleTheme?: () => void;
+}) {
   const [activeFeature, setActiveFeature] = useState<number>(0);
 
   const features = [
@@ -347,7 +355,7 @@ function InteractiveLoginScreen({ onSignIn }: { onSignIn: () => void }) {
       icon: "🔍",
       title: "Smart AI Visual Match",
       tag: "Vision & CLIP AI",
-      tagColor: "bg-blue-100 text-blue-700",
+      tagColor: isDarkMode ? "bg-blue-900/50 text-blue-300" : "bg-blue-100 text-blue-700",
       description:
         "Upload a photo of your lost belonging. Multi-modal AI instantly compares visual features with founder submissions across campus.",
     },
@@ -355,7 +363,7 @@ function InteractiveLoginScreen({ onSignIn }: { onSignIn: () => void }) {
       icon: "🔐",
       title: "Secret Question Shield",
       tag: "Zero False Claims",
-      tagColor: "bg-emerald-100 text-emerald-800",
+      tagColor: isDarkMode ? "bg-emerald-900/50 text-emerald-300" : "bg-emerald-100 text-emerald-800",
       description:
         "Finders lock sensitive identifying marks behind confidential security questions. Only the genuine owner can answer and unlock details.",
     },
@@ -363,16 +371,44 @@ function InteractiveLoginScreen({ onSignIn }: { onSignIn: () => void }) {
       icon: "🤝",
       title: "Direct Chat & 24h OTP",
       tag: "Secure Handover",
-      tagColor: "bg-violet-100 text-violet-800",
+      tagColor: isDarkMode ? "bg-violet-900/50 text-violet-300" : "bg-violet-100 text-violet-800",
       description:
         "Chat in real time directly with the finder, coordinate a safe campus meeting spot, and verify in-person handoff with a single-use 24-hour OTP code.",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 relative overflow-hidden flex flex-col justify-center items-center px-4 py-10 selection:bg-blue-500 selection:text-white">
+    <div
+      className={`min-h-screen relative overflow-hidden flex flex-col justify-center items-center px-4 py-10 transition-colors duration-200 selection:bg-blue-500 selection:text-white ${
+        isDarkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
+      }`}
+    >
+      {/* ── Theme Toggle Button on Login Screen (Top Right) ── */}
+      {onToggleTheme && (
+        <div className="absolute top-5 right-5 z-20">
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 border backdrop-blur-md cursor-pointer ${
+              isDarkMode
+                ? "bg-slate-900/90 text-amber-300 border-slate-700 hover:bg-slate-800 shadow-md"
+                : "bg-white/90 text-slate-700 border-slate-200 hover:bg-slate-100 shadow-xs"
+            }`}
+            title="Toggle Dark / Light Mode"
+          >
+            <span>{isDarkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}</span>
+          </button>
+        </div>
+      )}
+
       {/* ── Background Decorative Dot Grid ── */}
-      <div className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:24px_24px] opacity-70 pointer-events-none" />
+      <div
+        className={`absolute inset-0 [background-size:24px_24px] pointer-events-none ${
+          isDarkMode
+            ? "bg-[radial-gradient(#334155_1px,transparent_1px)] opacity-40"
+            : "bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] opacity-70"
+        }`}
+      />
 
       {/* ── Ambient Glowing Colored Orbs ── */}
       <div className="absolute -top-36 -left-36 w-96 h-96 bg-blue-400/25 rounded-full blur-3xl pointer-events-none animate-pulse-glow" />
@@ -393,18 +429,22 @@ function InteractiveLoginScreen({ onSignIn }: { onSignIn: () => void }) {
             CAMPUS MOTTO
           </span>
           <span className="text-slate-300">|</span>
-          <span className="text-slate-800 font-extrabold tracking-tight text-xs sm:text-sm">
+          <span className={`font-extrabold tracking-tight text-xs sm:text-sm ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>
             &ldquo;Every Lost Item Has a Way Back Home.&rdquo;
           </span>
           <span className="text-amber-500 animate-pulse text-sm">✨</span>
         </div>
-        <p className="text-[11px] text-slate-500 mt-1.5 font-medium tracking-wide">
+        <p className={`text-[11px] mt-1.5 font-medium tracking-wide ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
           Reconnecting Belongings • Rebuilding Trust Across Campus
         </p>
       </div>
 
       {/* ── MAIN INTERACTIVE HERO CARD ── */}
-      <div className="relative z-10 max-w-lg w-full bg-white/90 backdrop-blur-xl rounded-[32px] shadow-2xl shadow-slate-300/60 border border-white/80 p-7 sm:p-9 text-center overflow-hidden transition-all duration-300 hover:shadow-slate-300/80">
+      <div className={`relative z-10 max-w-lg w-full backdrop-blur-xl rounded-[32px] border p-7 sm:p-9 text-center overflow-hidden transition-all duration-300 shadow-2xl ${
+        isDarkMode
+          ? "bg-slate-900/90 border-slate-800 text-white shadow-black/80"
+          : "bg-white/90 border-white/80 text-slate-900 shadow-slate-300/60"
+      }`}>
         {/* Subtle Top Gradient Accent Rim */}
         <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600" />
 
@@ -416,13 +456,13 @@ function InteractiveLoginScreen({ onSignIn }: { onSignIn: () => void }) {
           </div>
         </div>
 
-        <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-1.5">
+        <h1 className={`text-3xl sm:text-4xl font-black tracking-tight mb-1.5 ${isDarkMode ? "text-white" : "text-slate-900"}`}>
           Found!t
         </h1>
-        <p className="text-xs sm:text-sm text-slate-600 mb-6 font-medium leading-relaxed max-w-sm mx-auto">
+        <p className={`text-xs sm:text-sm mb-6 font-medium leading-relaxed max-w-sm mx-auto ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
           College Campus Lost &amp; Found Platform
           <br />
-          <span className="text-[11px] text-slate-400">
+          <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-400"}`}>
             Where lost student belongings find their way back home.
           </span>
         </p>
@@ -438,8 +478,12 @@ function InteractiveLoginScreen({ onSignIn }: { onSignIn: () => void }) {
                 onMouseEnter={() => setActiveFeature(idx)}
                 className={`group p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer ${
                   isSelected
-                    ? "bg-slate-50 border-blue-400 shadow-xs ring-1 ring-blue-400/30"
-                    : "bg-white/60 border-slate-200/80 hover:bg-slate-50/70 hover:border-slate-300"
+                    ? isDarkMode
+                      ? "bg-slate-800/90 border-blue-500 shadow-xs ring-1 ring-blue-500/30 text-white"
+                      : "bg-slate-50 border-blue-400 shadow-xs ring-1 ring-blue-400/30 text-slate-900"
+                    : isDarkMode
+                    ? "bg-slate-950/40 border-slate-800 hover:bg-slate-800/50 hover:border-slate-700 text-slate-300"
+                    : "bg-white/60 border-slate-200/80 hover:bg-slate-50/70 hover:border-slate-300 text-slate-900"
                 }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-1">
@@ -532,6 +576,34 @@ function InteractiveLoginScreen({ onSignIn }: { onSignIn: () => void }) {
 // ─── Main Home Page ────────────────────────────────────────────────────────────
 export default function HomePage() {
   const { data: session, status } = useSession();
+
+  // Dark / Light Theme Mode
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme");
+    if (saved === "dark") {
+      setIsDarkMode(true);
+      document.documentElement.classList.add("dark");
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    setIsDarkMode((prev) => {
+      const next = !prev;
+      if (next) {
+        localStorage.setItem("theme", "dark");
+        document.documentElement.classList.add("dark");
+      } else {
+        localStorage.setItem("theme", "light");
+        document.documentElement.classList.remove("dark");
+      }
+      return next;
+    });
+  };
 
   // Data state
   const [myReports, setMyReports] = useState<Report[]>([]);
@@ -815,10 +887,20 @@ export default function HomePage() {
   // ────────────────────────────────────────────────────────────────────────────
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div
+        className={`min-h-screen flex items-center justify-center transition-colors duration-200 ${
+          isDarkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
+        }`}
+      >
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-600 text-sm font-medium">Loading Found!t...</p>
+          <p
+            className={`text-sm font-medium ${
+              isDarkMode ? "text-slate-400" : "text-slate-600"
+            }`}
+          >
+            Loading Found!t...
+          </p>
         </div>
       </div>
     );
@@ -828,7 +910,13 @@ export default function HomePage() {
   // NOT LOGGED IN → Login Screen
   // ────────────────────────────────────────────────────────────────────────────
   if (!session) {
-    return <InteractiveLoginScreen onSignIn={() => signIn("google")} />;
+    return (
+      <InteractiveLoginScreen
+        onSignIn={() => signIn("google")}
+        isDarkMode={isDarkMode}
+        onToggleTheme={toggleTheme}
+      />
+    );
   }
 
   // ────────────────────────────────────────────────────────────────────────────
@@ -853,7 +941,11 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div
+      className={`min-h-screen transition-colors duration-200 ${
+        isDarkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
+      }`}
+    >
       {/* Verification Modal */}
       {verifyingReport && session.user?.email && (
         <VerificationModal
@@ -946,24 +1038,52 @@ export default function HomePage() {
       )}
 
       {/* ── Top Navigation Bar ─────────────────────────────────────────────── */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+      <header
+        className={`border-b sticky top-0 z-30 backdrop-blur-md transition-colors duration-200 ${
+          isDarkMode
+            ? "bg-slate-900/90 border-slate-800 text-slate-100 shadow-sm"
+            : "bg-white/95 border-slate-200 text-slate-900 shadow-xs"
+        }`}
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-lg">
+            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-lg shadow-sm">
               F!
             </div>
-            <span className="font-extrabold text-xl text-slate-900 tracking-tight">
+            <span
+              className={`font-extrabold text-xl tracking-tight ${
+                isDarkMode ? "text-white" : "text-slate-900"
+              }`}
+            >
               Found!t
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* ☀️ / 🌙 Dark Mode to Light Mode Toggle Button */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                isDarkMode
+                  ? "bg-slate-800 text-amber-300 border-slate-700 hover:bg-slate-700 shadow-xs"
+                  : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 shadow-2xs"
+              }`}
+              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              <span>{isDarkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}</span>
+            </button>
+
             {/* ── Chat Notification Bar / Bell ── */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setShowNotificationsDropdown((prev) => !prev)}
-                className="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center justify-center cursor-pointer"
+                className={`relative p-2 rounded-xl transition flex items-center justify-center cursor-pointer ${
+                  isDarkMode
+                    ? "text-slate-300 hover:text-white hover:bg-slate-800"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                }`}
                 title="Chat Notifications"
               >
                 <span className="text-xl">🔔</span>
@@ -976,11 +1096,27 @@ export default function HomePage() {
 
               {/* Notifications Dropdown Panel */}
               {showNotificationsDropdown && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 animate-in fade-in zoom-in-95">
-                  <div className="p-3.5 bg-gradient-to-r from-violet-50 to-indigo-50 border-b border-slate-100 flex items-center justify-between">
+                <div
+                  className={`absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl shadow-2xl border overflow-hidden z-50 animate-in fade-in zoom-in-95 ${
+                    isDarkMode
+                      ? "bg-slate-900 border-slate-800"
+                      : "bg-white border-slate-200"
+                  }`}
+                >
+                  <div
+                    className={`p-3.5 border-b flex items-center justify-between ${
+                      isDarkMode
+                        ? "bg-slate-800/80 border-slate-700"
+                        : "bg-gradient-to-r from-violet-50 to-indigo-50 border-slate-100"
+                    }`}
+                  >
                     <div className="flex items-center gap-2">
                       <span className="text-base">💬</span>
-                      <h4 className="font-bold text-xs text-slate-900 uppercase tracking-wide">
+                      <h4
+                        className={`font-bold text-xs uppercase tracking-wide ${
+                          isDarkMode ? "text-slate-200" : "text-slate-900"
+                        }`}
+                      >
                         Chat Notifications
                       </h4>
                       {unreadChats.length > 0 && (
@@ -992,7 +1128,11 @@ export default function HomePage() {
                     <button
                       type="button"
                       onClick={handleClearNotifications}
-                      className="text-xs font-bold text-slate-600 hover:text-rose-600 bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 px-2.5 py-1 rounded-xl transition shadow-2xs flex items-center gap-1 cursor-pointer"
+                      className={`text-xs font-bold px-2.5 py-1 rounded-xl transition shadow-2xs flex items-center gap-1 cursor-pointer border ${
+                        isDarkMode
+                          ? "bg-slate-700 text-slate-200 hover:text-rose-400 border-slate-600 hover:bg-slate-600"
+                          : "text-slate-600 hover:text-rose-600 bg-white hover:bg-rose-50 border-slate-200 hover:border-rose-200"
+                      }`}
                       title="Clear notifications and reset badge"
                     >
                       <span>🧹</span>
@@ -1000,7 +1140,11 @@ export default function HomePage() {
                     </button>
                   </div>
 
-                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                  <div
+                    className={`max-h-80 overflow-y-auto divide-y ${
+                      isDarkMode ? "divide-slate-800" : "divide-slate-100"
+                    }`}
+                  >
                     {userChats.length === 0 ? (
                       <div className="p-6 text-center text-xs text-slate-400">
                         No chat notifications yet.
@@ -1018,14 +1162,22 @@ export default function HomePage() {
                               setShowNotificationsDropdown(false);
                               setActiveChat(c);
                             }}
-                            className="p-3 hover:bg-slate-50 cursor-pointer transition flex items-start gap-3"
+                            className={`p-3 cursor-pointer transition flex items-start gap-3 ${
+                              isDarkMode
+                                ? "hover:bg-slate-800/60"
+                                : "hover:bg-slate-50"
+                            }`}
                           >
-                            <div className="w-9 h-9 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center text-base shrink-0 font-bold">
+                            <div className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 flex items-center justify-center text-base shrink-0 font-bold">
                               💬
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center justify-between gap-1 mb-0.5">
-                                <p className="font-bold text-xs text-slate-900 truncate">
+                                <p
+                                  className={`font-bold text-xs truncate ${
+                                    isDarkMode ? "text-slate-100" : "text-slate-900"
+                                  }`}
+                                >
                                   {c.reportTitle}
                                 </p>
                                 <span
@@ -1040,9 +1192,19 @@ export default function HomePage() {
                               </div>
                               <p className="text-[11px] text-slate-500 truncate">
                                 With {otherRole}:{" "}
-                                <strong className="text-slate-700">{otherName}</strong>
+                                <strong
+                                  className={
+                                    isDarkMode ? "text-slate-300" : "text-slate-700"
+                                  }
+                                >
+                                  {otherName}
+                                </strong>
                               </p>
-                              <p className="text-[11px] text-slate-600 truncate mt-0.5 italic">
+                              <p
+                                className={`text-[11px] truncate mt-0.5 italic ${
+                                  isDarkMode ? "text-slate-400" : "text-slate-600"
+                                }`}
+                              >
                                 &quot;{c.lastMessage || "Click to open conversation"}&quot;
                               </p>
                             </div>
@@ -1052,13 +1214,19 @@ export default function HomePage() {
                     )}
                   </div>
 
-                  <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
+                  <div
+                    className={`p-2.5 border-t text-center ${
+                      isDarkMode
+                        ? "bg-slate-800/60 border-slate-800"
+                        : "bg-slate-50 border-slate-100"
+                    }`}
+                  >
                     <button
                       onClick={() => {
                         setShowNotificationsDropdown(false);
                         setActiveTab("chats");
                       }}
-                      className="text-xs font-bold text-violet-600 hover:text-violet-700 cursor-pointer"
+                      className="text-xs font-bold text-violet-500 hover:text-violet-400 cursor-pointer"
                     >
                       View All Campus Chats →
                     </button>
@@ -1068,16 +1236,26 @@ export default function HomePage() {
             </div>
 
             <div className="hidden sm:flex flex-col text-right">
-              <span className="text-sm font-semibold text-slate-800">
+              <span
+                className={`text-sm font-semibold ${
+                  isDarkMode ? "text-slate-200" : "text-slate-800"
+                }`}
+              >
                 {session.user?.name || "Student"}
               </span>
-              <span className="text-xs text-slate-500">{session.user?.email}</span>
+              <span
+                className={`text-xs ${
+                  isDarkMode ? "text-slate-400" : "text-slate-500"
+                }`}
+              >
+                {session.user?.email}
+              </span>
             </div>
             {session.user?.image && (
               <img
                 src={session.user.image}
                 alt="Profile"
-                className="w-9 h-9 rounded-full border border-slate-300"
+                className="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-700"
               />
             )}
             <button
@@ -1133,37 +1311,61 @@ export default function HomePage() {
       {/* ── Main Content ───────────────────────────────────────────────────── */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Welcome Banner */}
-        <div className="mb-8">
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+        <div className="mb-8 animate-slide-up">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-bold mb-2 border border-blue-200 dark:border-blue-800">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <span>Campus Item Recovery Live</span>
+          </div>
+          <h1
+            className={`text-2xl sm:text-4xl font-extrabold tracking-tight ${
+              isDarkMode ? "text-white" : "text-slate-900"
+            }`}
+          >
             Welcome back, {session.user?.name?.split(" ")[0]}!
           </h1>
-          <p className="text-slate-600 text-sm sm:text-base mt-1.5">
+          <p
+            className={`text-sm sm:text-base mt-1.5 ${
+              isDarkMode ? "text-slate-400" : "text-slate-600"
+            }`}
+          >
             What would you like to do today?
           </p>
         </div>
 
         {/* ── 2 Action Cards ─────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 animate-slide-up">
           {/* REPORT LOST */}
           <Link
             href="/report-lost"
-            className="group bg-white rounded-3xl p-7 shadow-md border-2 border-slate-200 hover:border-blue-500 hover:shadow-xl transition-all duration-200 flex flex-col justify-between"
+            className={`group rounded-3xl p-7 shadow-md border-2 hover:border-blue-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between card-hover-effect ${
+              isDarkMode
+                ? "bg-slate-900 border-slate-800"
+                : "bg-white border-slate-200"
+            }`}
           >
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform animate-float">
                 🔍
               </div>
-              <div className="inline-block px-3 py-0.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-full mb-2">
+              <div className="inline-block px-3 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-full mb-2">
                 Lost an Item?
               </div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition">
+              <h2
+                className={`text-xl font-bold mb-2 group-hover:text-blue-500 transition ${
+                  isDarkMode ? "text-white" : "text-slate-900"
+                }`}
+              >
                 Report Lost Product
               </h2>
-              <p className="text-slate-600 text-sm leading-relaxed">
+              <p
+                className={`text-sm leading-relaxed ${
+                  isDarkMode ? "text-slate-400" : "text-slate-600"
+                }`}
+              >
                 File a lost item complaint with details, campus location, contact info, and a photo.
               </p>
             </div>
-            <div className="flex items-center gap-2 font-bold text-blue-600 text-sm mt-5 group-hover:translate-x-1 transition-transform">
+            <div className="flex items-center gap-2 font-bold text-blue-500 text-sm mt-5 group-hover:translate-x-1.5 transition-transform">
               <span>File Lost Report</span>
               <span>→</span>
             </div>
@@ -1172,23 +1374,35 @@ export default function HomePage() {
           {/* REPORT FOUND */}
           <Link
             href="/report-found"
-            className="group bg-white rounded-3xl p-7 shadow-md border-2 border-slate-200 hover:border-emerald-500 hover:shadow-xl transition-all duration-200 flex flex-col justify-between"
+            className={`group rounded-3xl p-7 shadow-md border-2 hover:border-emerald-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between card-hover-effect ${
+              isDarkMode
+                ? "bg-slate-900 border-slate-800"
+                : "bg-white border-slate-200"
+            }`}
           >
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform animate-float-delayed">
                 🎁
               </div>
-              <div className="inline-block px-3 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full mb-2">
+              <div className="inline-block px-3 py-0.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-full mb-2">
                 Found an Item?
               </div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-emerald-600 transition">
+              <h2
+                className={`text-xl font-bold mb-2 group-hover:text-emerald-500 transition ${
+                  isDarkMode ? "text-white" : "text-slate-900"
+                }`}
+              >
                 Report Found Product
               </h2>
-              <p className="text-slate-600 text-sm leading-relaxed">
+              <p
+                className={`text-sm leading-relaxed ${
+                  isDarkMode ? "text-slate-400" : "text-slate-600"
+                }`}
+              >
                 Found something on campus? Post a photo, location, and a confidential security question.
               </p>
             </div>
-            <div className="flex items-center gap-2 font-bold text-emerald-600 text-sm mt-5 group-hover:translate-x-1 transition-transform">
+            <div className="flex items-center gap-2 font-bold text-emerald-500 text-sm mt-5 group-hover:translate-x-1.5 transition-transform">
               <span>Submit Found Report</span>
               <span>→</span>
             </div>
@@ -1196,21 +1410,41 @@ export default function HomePage() {
         </div>
 
         {/* ── Tabbed Section ─────────────────────────────────────────────── */}
-        <section className="bg-white rounded-3xl shadow-md border border-slate-200 overflow-hidden">
+        <section
+          className={`rounded-3xl shadow-md border overflow-hidden transition-colors ${
+            isDarkMode
+              ? "bg-slate-900 border-slate-800"
+              : "bg-white border-slate-200"
+          }`}
+        >
           {/* Tab Header */}
-          <div className="flex border-b border-slate-200">
+          <div
+            className={`flex border-b ${
+              isDarkMode ? "border-slate-800" : "border-slate-200"
+            }`}
+          >
             <button
               onClick={() => setActiveTab("my")}
-              className={`flex-1 py-4 text-sm font-bold transition flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-4 text-sm font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === "my"
-                  ? "bg-white text-slate-900 border-b-2 border-blue-600"
-                  : "text-slate-500 hover:bg-slate-50"
+                  ? isDarkMode
+                    ? "bg-slate-900 text-white border-b-2 border-blue-500"
+                    : "bg-white text-slate-900 border-b-2 border-blue-600"
+                  : isDarkMode
+                  ? "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
               }`}
             >
               <span>📋</span>
               <span>My Reports</span>
               {myReports.length > 0 && (
-                <span className="ml-1 text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">
+                <span
+                  className={`ml-1 text-xs px-2 py-0.5 rounded-full font-semibold ${
+                    isDarkMode
+                      ? "bg-slate-800 text-slate-300"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
                   {myReports.length}
                 </span>
               )}
@@ -1218,20 +1452,36 @@ export default function HomePage() {
 
             <button
               onClick={() => setActiveTab("inventory")}
-              className={`flex-1 py-4 text-sm font-bold transition flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-4 text-sm font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === "inventory"
-                  ? "bg-white text-slate-900 border-b-2 border-emerald-600"
-                  : "text-slate-500 hover:bg-slate-50"
+                  ? isDarkMode
+                    ? "bg-slate-900 text-white border-b-2 border-emerald-500"
+                    : "bg-white text-slate-900 border-b-2 border-emerald-600"
+                  : isDarkMode
+                  ? "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
               }`}
             >
               <span>{hasLostReport ? "🎁" : "🔒"}</span>
               <span>Found Inventory</span>
               {hasLostReport && foundInventory.length > 0 ? (
-                <span className="ml-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+                <span
+                  className={`ml-1 text-xs px-2 py-0.5 rounded-full font-semibold ${
+                    isDarkMode
+                      ? "bg-emerald-950/60 text-emerald-300 border border-emerald-800"
+                      : "bg-emerald-100 text-emerald-700"
+                  }`}
+                >
                   {foundInventory.length}
                 </span>
               ) : !hasLostReport ? (
-                <span className="ml-1 text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-bold">
+                <span
+                  className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                    isDarkMode
+                      ? "bg-amber-950/60 text-amber-300 border border-amber-800"
+                      : "bg-amber-100 text-amber-800"
+                  }`}
+                >
                   Restricted
                 </span>
               ) : null}
@@ -1239,16 +1489,26 @@ export default function HomePage() {
 
             <button
               onClick={() => setActiveTab("chats")}
-              className={`flex-1 py-4 text-sm font-bold transition flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-4 text-sm font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 activeTab === "chats"
-                  ? "bg-white text-slate-900 border-b-2 border-violet-600"
-                  : "text-slate-500 hover:bg-slate-50"
+                  ? isDarkMode
+                    ? "bg-slate-900 text-white border-b-2 border-violet-500"
+                    : "bg-white text-slate-900 border-b-2 border-violet-600"
+                  : isDarkMode
+                  ? "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
               }`}
             >
               <span>💬</span>
               <span>Campus Chats</span>
               {userChats.length > 0 && (
-                <span className="ml-1 text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-semibold">
+                <span
+                  className={`ml-1 text-xs px-2 py-0.5 rounded-full font-semibold ${
+                    isDarkMode
+                      ? "bg-violet-950/60 text-violet-300 border border-violet-800"
+                      : "bg-violet-100 text-violet-700"
+                  }`}
+                >
                   {userChats.length}
                 </span>
               )}
@@ -1446,7 +1706,11 @@ export default function HomePage() {
                       return (
                         <div
                           key={chat._id}
-                          className="border border-slate-200 hover:border-violet-400 rounded-2xl p-4 bg-white hover:shadow-md transition flex flex-col justify-between group"
+                          className={`border rounded-2xl p-4 transition flex flex-col justify-between group ${
+                            isDarkMode
+                              ? "bg-slate-900 border-slate-800 hover:border-violet-500 hover:shadow-md"
+                              : "bg-white border-slate-200 hover:border-violet-400 hover:shadow-md"
+                          }`}
                         >
                           <div
                             onClick={() => setActiveChat(chat)}
@@ -1457,30 +1721,52 @@ export default function HomePage() {
                                 <img
                                   src={chat.reportImageUrl}
                                   alt={chat.reportTitle}
-                                  className="w-12 h-12 rounded-xl object-cover border border-slate-200"
+                                  className={`w-12 h-12 rounded-xl object-cover border ${
+                                    isDarkMode ? "border-slate-700" : "border-slate-200"
+                                  }`}
                                 />
                               ) : (
-                                <div className="w-12 h-12 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center text-xl font-bold">
+                                <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 flex items-center justify-center text-xl font-bold">
                                   💬
                                 </div>
                               )}
                               <div className="min-w-0 flex-1">
-                                <h4 className="font-bold text-slate-900 text-sm line-clamp-1">
+                                <h4
+                                  className={`font-bold text-sm line-clamp-1 ${
+                                    isDarkMode ? "text-white" : "text-slate-900"
+                                  }`}
+                                >
                                   {chat.reportTitle}
                                 </h4>
-                                <p className="text-xs text-slate-500 truncate">
+                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                                   With {otherRole}:{" "}
-                                  <strong className="text-slate-800">{otherName}</strong>
+                                  <strong
+                                    className={
+                                      isDarkMode ? "text-slate-200" : "text-slate-800"
+                                    }
+                                  >
+                                    {otherName}
+                                  </strong>
                                 </p>
                               </div>
                             </div>
 
-                            <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 line-clamp-2 italic">
+                            <p
+                              className={`text-xs p-2.5 rounded-xl border line-clamp-2 italic ${
+                                isDarkMode
+                                  ? "bg-slate-800/80 text-slate-300 border-slate-700"
+                                  : "bg-slate-50 text-slate-600 border-slate-100"
+                              }`}
+                            >
                               &quot;{chat.lastMessage || "Click to open conversation"}&quot;
                             </p>
                           </div>
 
-                          <div className="mt-4 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                          <div
+                            className={`mt-4 pt-2 border-t flex items-center justify-between text-[11px] ${
+                              isDarkMode ? "border-slate-800 text-slate-500" : "border-slate-100 text-slate-400"
+                            }`}
+                          >
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"

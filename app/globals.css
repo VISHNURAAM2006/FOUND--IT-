@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+}
+
+:root.dark, .dark {
+  --background: #020617;
+  --foreground: #f8fafc;
 }
 
 @theme inline {
@@ -15,16 +22,16 @@ body {
   color: var(--foreground);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Ensure form controls are always visible with high contrast */
-input, select, textarea {
-  color: #0f172a !important;
-  background-color: #ffffff !important;
+/* Form controls adapt cleanly based on theme */
+:not(.dark) input, :not(.dark) select, :not(.dark) textarea {
+  color: #0f172a;
 }
 
-input::placeholder, textarea::placeholder {
-  color: #94a3b8 !important;
+.dark input, .dark select, .dark textarea {
+  color: #f8fafc;
 }
 
 @keyframes float {
@@ -83,4 +90,72 @@ input::placeholder, textarea::placeholder {
 
 .animate-shimmer {
   animation: shimmer 2.5s infinite;
+}
+
+@keyframes gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-gradient-flow {
+  background-size: 200% 200%;
+  animation: gradient-flow 6s ease infinite;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2.5s ease-in-out infinite;
+}
+
+/* Card smooth hover lift */
+.card-hover-effect {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+}
+.card-hover-effect:hover {
+  transform: translateY(-3px);
 }
