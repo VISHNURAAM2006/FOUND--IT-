@@ -79,48 +79,124 @@ export async function POST(request: Request) {
       if (matchedLab) break;
     }
 
-    // 4. Check if an external Google Gemini API Key is configured
+    // 4. Shared Context for External LLMs (Groq / Gemini)
+    const inventoryContext = activeFoundReports.map((r) => ({
+      title: r.title,
+      category: r.category,
+      location: r.location,
+      color: r.color,
+      status: r.status,
+      date: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "Recent",
+      isLocked: !!r.hiddenQuestion,
+    }));
+
+    const collegeContext = COLLEGE_CAMPUS_SPATIAL_GRAPH.map((d) => ({
+      name: d.name,
+      block: d.blockName,
+      opposite: d.opposite || "N/A",
+      left: d.leftSide || "N/A",
+      right: d.rightSide || "N/A",
+      back: d.backSide || "N/A",
+      floors: d.floorDetails || "N/A",
+      labs: d.labs,
+    }));
+
+    const systemPrompt = `You are the intelligent, razor-sharp AI Campus Recovery Detective for the "Found!t" lost and found platform at Mepco Schlenk Engineering College.
+You have real-time access to the live found database and the complete 16-department college campus spatial map.
+
+COLLEGE CAMPUS SPATIAL GRAPH (16 BLOCKS & ALL LABS):
+${JSON.stringify(collegeContext, null, 2)}
+
+LIVE FOUND ITEMS CURRENTLY LOGGED IN DATABASE:
+${JSON.stringify(inventoryContext, null, 2)}
+
+YOUR CORE RESPONSIBILITIES & PROTOCOLS:
+1. CHECK LIVE INVENTORY FIRST:
+   - When a student asks if an item was found (e.g. phone, watch, calculator, earbuds, laptop, wallet, keys), check the LIVE FOUND ITEMS list.
+   - If an item matches, cite its exact title, category, location, and date found. Instruct them to go to the "Found Inventory" tab and click "Answer Question & Unlock".
+2. INFER LOSS SCENARIOS WHEN NO FOUND REPORT EXISTS:
+   - If a student describes an item they lost and where they lost it, but NO report matches in the database yet, do NOT just say "not found".
+   - Instead, act like an expert campus investigator:
+     a) Analyze their location and transit route against the COLLEGE CAMPUS SPATIAL GRAPH.
+     b) Identify specific high-probability drop hotspots (e.g. exact lab benches, seat seams, power socket charging ledgers, attendance desk, or corridor paths between adjacent blocks like Civil towards EEE past Admin).
+     c) Provide immediate physical recovery actions (e.g., asking the department lab technician or peon, checking the Canteen token counter, or inquiring at the TMB ATM / security post).
+     d) Instruct them to click "Report Lost Product" on their dashboard so our automated AI matcher (with a strict >= 75% cutoff) will alert them the moment anyone uploads a matching item.
+3. PRECISE CAMPUS DIRECTIONS & LAB NAVIGATION:
+   - When asked where a department, lab (e.g. Deep Learning Lab, CADD Center, CNC Lab, Language Lab), or amenity is located, provide the exact block, floor details, and surrounding adjacencies (opposite, left, right, behind).
+4. HANDOVER & SECURITY PROCEDURES:
+   - To prevent theft, the finder sets a secret question. The true owner answers it to unlock direct side-by-side chat.
+   - The physical handover is officially certified using a single-use 24-hour 6-digit OTP code.
+5. TONE & FORMATTING:
+   - Be helpful, empathetic, concise, and professional.
+   - Format responses cleanly with Markdown headers, bold highlights, and bullet points.`;
+
+    // 4A. Primary Engine: Groq Cloud High-Speed Inference
+    const groqApiKey = process.env.GROQ_API_KEY;
+
+    if (groqApiKey) {
+      const candidateModels = [
+        "openai/gpt-oss-120b",
+        "qwen/qwen3.8-27b",
+        "openai/gpt-oss-20b",
+        "llama-3.3-70b-versatile",
+      ];
+
+      const groqMessages = [
+        { role: "system", content: systemPrompt },
+        ...history.slice(-4).map((h: any) => ({
+          role: h.role === "user" ? "user" : "assistant",
+          content: h.content,
+        })),
+        { role: "user", content: message },
+      ];
+
+      for (const model of candidateModels) {
+        try {
+          const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${groqApiKey}`,
+            },
+            body: JSON.stringify({
+              model,
+              messages: groqMessages,
+              temperature: 0.3,
+              max_tokens: 800,
+            }),
+          });
+
+          if (groqRes.ok) {
+            const groqData = await groqRes.json();
+            const groqReply = groqData.choices?.[0]?.message?.content;
+
+            if (groqReply && groqReply.trim()) {
+              return NextResponse.json({
+                success: true,
+                reply: groqReply.trim(),
+                source: `groq-${model}`,
+                suggestedProducts: matchingProducts.slice(0, 4).map((p) => ({
+                  _id: p._id,
+                  title: p.title,
+                  category: p.category,
+                  location: p.location,
+                  imageUrl: p.imageUrl,
+                  isLocked: !!p.hiddenQuestion,
+                })),
+              });
+            }
+          }
+        } catch (groqErr) {
+          console.warn(`Groq attempt with model ${model} failed, trying next:`, groqErr);
+        }
+      }
+    }
+
+    // 4B. Secondary Engine: Google Gemini (if configured)
     const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
 
     if (geminiApiKey) {
       try {
-        const inventoryContext = activeFoundReports.map((r) => ({
-          title: r.title,
-          category: r.category,
-          location: r.location,
-          color: r.color,
-          status: r.status,
-          date: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "Recent",
-          isLocked: !!r.hiddenQuestion,
-        }));
-
-        const collegeContext = COLLEGE_CAMPUS_SPATIAL_GRAPH.map((d) => ({
-          name: d.name,
-          block: d.blockName,
-          opposite: d.opposite || "N/A",
-          left: d.leftSide || "N/A",
-          right: d.rightSide || "N/A",
-          back: d.backSide || "N/A",
-          floors: d.floorDetails || "N/A",
-          labs: d.labs.slice(0, 5),
-        }));
-
-        const systemPrompt = `You are the friendly, helpful AI Campus Recovery Assistant for the "Found!t" platform at Mepco Schlenk Engineering College.
-You have direct, real-time access to the campus spatial layout and live lost & found database inventory.
-
-LIVE FOUND ITEMS INVENTORY:
-${JSON.stringify(inventoryContext, null, 2)}
-
-CAMPUS SPATIAL KNOWLEDGE & DEPARTMENTS:
-${JSON.stringify(collegeContext, null, 2)}
-
-CAMPUS RECOVERY PROTOCOL:
-- When a user asks if a specific item is found, check the live inventory above. If found, describe the title, category, location, and date.
-- To claim a found product, the owner must click "Answer Question & Unlock" to answer the confidential security question set by the founder. Once unlocked, a side-by-side chat opens with the founder, and physical handover is verified with a single-use 24-hour OTP code.
-- If an item is not in the found inventory yet, encourage them to file a Lost Report via the "Report Lost Product" button so AI auto-matching scans all future entries.
-- Answer questions about college locations (e.g. labs, departments, floor levels, canteen, library, MCC convention centre) with precise spatial directions.
-- Keep your responses friendly, concise, and professional. Format with Markdown.`;
-
         const geminiRes = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
           {

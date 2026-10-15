@@ -373,12 +373,10 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* KPI Metric Cards */}
+        {/* KPI Metric Cards (Skeuomorphic Archivist) */}
         {stats && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 animate-slide-up">
-            <div className={`p-4 rounded-2xl border flex flex-col justify-between card-hover-effect ${
-              isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-xs hover:shadow-md hover:border-slate-300"
-            }`}>
+            <div className="p-4 rounded-2xl skeuo-card flex flex-col justify-between card-hover-effect">
               <div className="flex items-center justify-between text-xs font-bold opacity-70">
                 <span>Students</span>
                 <span className="animate-bounce-subtle">👥</span>
@@ -391,9 +389,7 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            <div className={`p-4 rounded-2xl border flex flex-col justify-between card-hover-effect ${
-              isDarkMode ? "bg-slate-900 border-blue-900/40" : "bg-white border-blue-200 shadow-xs hover:shadow-md hover:border-blue-300"
-            }`}>
+            <div className="p-4 rounded-2xl skeuo-card flex flex-col justify-between card-hover-effect">
               <div className="flex items-center justify-between text-blue-500 text-xs font-bold">
                 <span>Lost Reports</span>
                 <span className="animate-bounce-subtle">🔍</span>
@@ -404,9 +400,7 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            <div className={`p-4 rounded-2xl border flex flex-col justify-between card-hover-effect ${
-              isDarkMode ? "bg-slate-900 border-emerald-900/40" : "bg-white border-emerald-200 shadow-xs hover:shadow-md hover:border-emerald-300"
-            }`}>
+            <div className="p-4 rounded-2xl skeuo-card flex flex-col justify-between card-hover-effect">
               <div className="flex items-center justify-between text-emerald-600 text-xs font-bold">
                 <span>Found Reports</span>
                 <span className="animate-bounce-subtle">🎁</span>
@@ -417,9 +411,7 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            <div className={`p-4 rounded-2xl border flex flex-col justify-between card-hover-effect ${
-              isDarkMode ? "bg-slate-900 border-purple-900/40" : "bg-white border-purple-200 shadow-xs hover:shadow-md hover:border-purple-300"
-            }`}>
+            <div className="p-4 rounded-2xl skeuo-card flex flex-col justify-between card-hover-effect">
               <div className="flex items-center justify-between text-purple-600 text-xs font-bold">
                 <span>Resolved</span>
                 <span className="animate-bounce-subtle">🤝</span>
@@ -432,9 +424,7 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            <div className={`p-4 rounded-2xl border col-span-2 sm:col-span-1 flex flex-col justify-between card-hover-effect ${
-              isDarkMode ? "bg-slate-900 border-amber-900/40" : "bg-white border-amber-200 shadow-xs hover:shadow-md hover:border-amber-300"
-            }`}>
+            <div className="p-4 rounded-2xl skeuo-card col-span-2 sm:col-span-1 flex flex-col justify-between card-hover-effect">
               <div className="flex items-center justify-between text-amber-600 text-xs font-bold">
                 <span>Active Chats</span>
                 <span className="animate-bounce-subtle">💬</span>
@@ -447,27 +437,21 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* Tab Navigation */}
-        <div className={`border-b flex items-center gap-2 overflow-x-auto pb-0.5 ${
-          isDarkMode ? "border-slate-800" : "border-slate-200"
-        }`}>
+        {/* Tab Navigation Tray (Recessed Skeuomorphic Channel) */}
+        <div className="skeuo-panel-inset p-1.5 rounded-2xl flex flex-col sm:flex-row gap-1.5 sm:gap-2">
           <button
             type="button"
             onClick={() => setActiveTab("complaints")}
-            className={`px-4 py-2.5 font-bold text-xs sm:text-sm rounded-t-xl transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            className={`px-4 py-2.5 font-black text-xs sm:text-sm rounded-xl transition flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
               activeTab === "complaints"
-                ? isDarkMode
-                  ? "bg-slate-900 text-amber-400 border-t-2 border-amber-400 border-x border-slate-800"
-                  : "bg-white text-amber-600 border-t-2 border-amber-500 border-x border-slate-200 shadow-xs"
+                ? "skeuo-card text-amber-700 dark:text-amber-400 shadow-sm"
                 : isDarkMode
                 ? "text-slate-400 hover:text-slate-200"
-                : "text-slate-500 hover:text-slate-800"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <span>📋 All Complaints</span>
-            <span className={`text-[11px] px-2 py-0.5 rounded-full font-extrabold ${
-              isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-700"
-            }`}>
+            <span className="text-[11px] px-2 py-0.5 rounded-full font-black skeuo-badge bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200">
               {reports.length}
             </span>
           </button>
@@ -475,20 +459,16 @@ export default function AdminDashboardPage() {
           <button
             type="button"
             onClick={() => setActiveTab("students")}
-            className={`px-4 py-2.5 font-bold text-xs sm:text-sm rounded-t-xl transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            className={`px-4 py-2.5 font-black text-xs sm:text-sm rounded-xl transition flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
               activeTab === "students"
-                ? isDarkMode
-                  ? "bg-slate-900 text-amber-400 border-t-2 border-amber-400 border-x border-slate-800"
-                  : "bg-white text-amber-600 border-t-2 border-amber-500 border-x border-slate-200 shadow-xs"
+                ? "skeuo-card text-amber-700 dark:text-amber-400 shadow-sm"
                 : isDarkMode
                 ? "text-slate-400 hover:text-slate-200"
-                : "text-slate-500 hover:text-slate-800"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <span>👥 Registered Students</span>
-            <span className={`text-[11px] px-2 py-0.5 rounded-full font-extrabold ${
-              isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-700"
-            }`}>
+            <span className="text-[11px] px-2 py-0.5 rounded-full font-black skeuo-badge bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200">
               {users.length}
             </span>
           </button>
@@ -496,20 +476,16 @@ export default function AdminDashboardPage() {
           <button
             type="button"
             onClick={() => setActiveTab("handovers")}
-            className={`px-4 py-2.5 font-bold text-xs sm:text-sm rounded-t-xl transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            className={`px-4 py-2.5 font-black text-xs sm:text-sm rounded-xl transition flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
               activeTab === "handovers"
-                ? isDarkMode
-                  ? "bg-slate-900 text-amber-400 border-t-2 border-amber-400 border-x border-slate-800"
-                  : "bg-white text-amber-600 border-t-2 border-amber-500 border-x border-slate-200 shadow-xs"
+                ? "skeuo-card text-amber-700 dark:text-amber-400 shadow-sm"
                 : isDarkMode
                 ? "text-slate-400 hover:text-slate-200"
-                : "text-slate-500 hover:text-slate-800"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <span>📜 Handover Audit Trail</span>
-            <span className={`text-[11px] px-2 py-0.5 rounded-full font-extrabold ${
-              isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-700"
-            }`}>
+            <span className="text-[11px] px-2 py-0.5 rounded-full font-black skeuo-badge bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200">
               {handovers.length}
             </span>
           </button>
@@ -517,20 +493,16 @@ export default function AdminDashboardPage() {
           <button
             type="button"
             onClick={() => setActiveTab("chats")}
-            className={`px-4 py-2.5 font-bold text-xs sm:text-sm rounded-t-xl transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+            className={`px-4 py-2.5 font-black text-xs sm:text-sm rounded-xl transition flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap ${
               activeTab === "chats"
-                ? isDarkMode
-                  ? "bg-slate-900 text-amber-400 border-t-2 border-amber-400 border-x border-slate-800"
-                  : "bg-white text-amber-600 border-t-2 border-amber-500 border-x border-slate-200 shadow-xs"
+                ? "skeuo-card text-amber-700 dark:text-amber-400 shadow-sm"
                 : isDarkMode
                 ? "text-slate-400 hover:text-slate-200"
-                : "text-slate-500 hover:text-slate-800"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <span>💬 Live Chat Arbitrations</span>
-            <span className={`text-[11px] px-2 py-0.5 rounded-full font-extrabold ${
-              isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-700"
-            }`}>
+            <span className="text-[11px] px-2 py-0.5 rounded-full font-black skeuo-badge bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200">
               {chats.length}
             </span>
           </button>
@@ -540,9 +512,7 @@ export default function AdminDashboardPage() {
         {activeTab === "complaints" && (
           <div className="space-y-4">
             {/* Filter Bar */}
-            <div className={`p-3.5 rounded-2xl border flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 ${
-              isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm"
-            }`}>
+            <div className="p-3.5 rounded-2xl skeuo-card flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
               {/* Type Pills */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
                 {(["ALL", "LOST", "FOUND", "RESOLVED"] as const).map((filter) => (
@@ -552,10 +522,8 @@ export default function AdminDashboardPage() {
                     onClick={() => setReportTypeFilter(filter)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
                       reportTypeFilter === filter
-                        ? "bg-amber-500 text-slate-950 shadow-sm"
-                        : isDarkMode
-                        ? "bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-                        : "bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200"
+                        ? "bg-amber-500 text-slate-950 skeuo-badge font-black shadow-xs"
+                        : "skeuo-button-metallic text-slate-700 dark:text-slate-300"
                     }`}
                   >
                     {filter === "ALL" && "All Reports"}
@@ -574,11 +542,7 @@ export default function AdminDashboardPage() {
                   placeholder="Search item, email, location, recipient..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`w-full pl-8 pr-3 py-2 rounded-xl text-xs focus:outline-none focus:border-amber-500 border ${
-                    isDarkMode
-                      ? "bg-slate-950 border-slate-800 text-white placeholder-slate-500"
-                      : "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400"
-                  }`}
+                  className="w-full pl-8 pr-3 py-2 rounded-xl text-xs focus:outline-none skeuo-input text-slate-900 dark:text-white placeholder-slate-400"
                 />
                 {searchQuery && (
                   <button
@@ -593,13 +557,11 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Complaints Table */}
-            <div className={`rounded-2xl border overflow-hidden ${
-              isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm"
-            }`}>
+            <div className="rounded-2xl skeuo-card overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className={`uppercase tracking-wider font-bold border-b ${
-                    isDarkMode ? "bg-slate-950 text-slate-400 border-slate-800" : "bg-slate-50 text-slate-600 border-slate-200"
+                  <thead className={`uppercase tracking-wider font-black border-b ${
+                    isDarkMode ? "bg-slate-950 text-slate-300 border-slate-800" : "bg-slate-100/80 text-slate-700 border-slate-200"
                   }`}>
                     <tr>
                       <th className="py-3.5 px-4">Type</th>

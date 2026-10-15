@@ -77,10 +77,10 @@ export default function AdminLoginPage() {
 
       {/* Center Auth Card */}
       <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-8">
-        <div className="max-w-md w-full bg-white border border-slate-200 rounded-3xl p-8 sm:p-10 shadow-xl shadow-slate-200/60 space-y-6">
+        <div className="max-w-md w-full skeuo-card rounded-3xl p-8 sm:p-10 shadow-xl space-y-6">
           {/* Card Header */}
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 mb-2 shadow-xs text-2xl">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-b from-amber-100 to-amber-200 border border-amber-300 mb-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),_inset_0_1px_0_rgba(255,255,255,0.8)] text-2xl">
               <span>🔐</span>
             </div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">Administrative Sign In</h1>
@@ -90,16 +90,16 @@ export default function AdminLoginPage() {
           </div>
 
           {/* Security Notice */}
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-2.5 text-xs text-amber-900">
+          <div className="p-3 skeuo-panel-inset rounded-2xl flex items-center gap-2.5 text-xs text-amber-900">
             <span className="text-base shrink-0">⚠️</span>
-            <p className="text-[11px] leading-tight">
+            <p className="text-[11px] leading-tight font-medium">
               Authorized personnel only. All administrative queries, status updates, and actions are securely logged.
             </p>
           </div>
 
           {/* Error Banner */}
           {errorMessage && (
-            <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700 animate-in fade-in flex items-start gap-2">
+            <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700 animate-in fade-in flex items-start gap-2 shadow-2xs">
               <span className="text-base shrink-0">✕</span>
               <span>{errorMessage}</span>
             </div>
@@ -118,7 +118,7 @@ export default function AdminLoginPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter admin username"
-                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition"
+                className="w-full px-4 py-3 rounded-xl skeuo-input text-slate-900 placeholder-slate-400 text-sm focus:outline-none"
               />
             </div>
 
@@ -134,7 +134,7 @@ export default function AdminLoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter admin password"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition pr-10"
+                  className="w-full px-4 py-3 rounded-xl skeuo-input text-slate-900 placeholder-slate-400 text-sm focus:outline-none pr-12"
                 />
                 <button
                   type="button"
@@ -149,7 +149,7 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-2 py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-slate-900/15 active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+              className="w-full mt-2 py-3.5 px-4 bg-gradient-to-b from-slate-800 to-slate-950 hover:from-slate-750 hover:to-slate-900 text-white font-black rounded-xl text-sm transition border-t border-white/20 border-b-2 border-black shadow-md active:translate-y-0.5 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>

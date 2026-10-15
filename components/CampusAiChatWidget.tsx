@@ -135,37 +135,37 @@ Ask me anything like:
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="group relative flex items-center gap-2.5 px-4 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white rounded-full shadow-xl shadow-indigo-500/25 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer border border-white/20"
+          className="group relative flex items-center gap-2.5 px-4 py-3 bg-gradient-to-b from-blue-500 via-indigo-600 to-indigo-700 text-white rounded-full shadow-[0_6px_20px_rgba(79,70,229,0.45),_0_2px_4px_rgba(0,0,0,0.2)] border-t-2 border-white/40 border-b-2 border-indigo-900 transition-all duration-200 hover:scale-105 active:scale-95 active:translate-y-0.5 cursor-pointer"
           title="Open Campus AI Assistant"
         >
           <span className="flex h-3 w-3 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400" />
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
           </span>
-          <span className="text-lg">🤖</span>
-          <span className="text-xs font-extrabold tracking-tight">Ask Campus AI</span>
+          <span className="text-lg drop-shadow-sm">🤖</span>
+          <span className="text-xs font-black tracking-wide drop-shadow-sm">Ask Campus AI</span>
         </button>
       )}
 
       {/* ── Expanded Chat Panel ── */}
       {isOpen && (
         <div
-          className={`w-[92vw] sm:w-[420px] h-[560px] max-h-[85vh] rounded-3xl shadow-2xl border flex flex-col overflow-hidden animate-scale-in transition-colors duration-200 ${
+          className={`w-[92vw] sm:w-[420px] h-[560px] max-h-[85vh] rounded-3xl skeuo-card shadow-2xl flex flex-col overflow-hidden animate-scale-in transition-colors duration-200 ${
             isDarkMode
-              ? "bg-slate-900 border-slate-700 text-slate-100 shadow-black/80"
-              : "bg-white border-slate-200 text-slate-900 shadow-slate-300/60"
+              ? "text-slate-100 shadow-black/90"
+              : "text-slate-900 shadow-slate-400/50"
           }`}
         >
           {/* Header */}
           <div
-            className={`p-4 border-b flex items-center justify-between transition-colors ${
+            className={`p-4 border-b flex items-center justify-between transition-colors shadow-xs ${
               isDarkMode
-                ? "bg-slate-800/90 border-slate-700"
-                : "bg-gradient-to-r from-blue-50 via-indigo-50 to-violet-50 border-slate-100"
+                ? "bg-gradient-to-b from-slate-800 to-slate-850 border-slate-700"
+                : "bg-gradient-to-b from-slate-50 via-indigo-50/50 to-slate-100 border-slate-200"
             }`}
           >
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-violet-600 text-white flex items-center justify-center text-lg shadow-sm">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-b from-blue-500 to-indigo-700 text-white flex items-center justify-center text-lg shadow-[0_2px_4px_rgba(0,0,0,0.2),_inset_0_1px_0_rgba(255,255,255,0.4)] border-t border-white/30">
                 🤖
               </div>
               <div>
@@ -313,11 +313,7 @@ Ask me anything like:
                 type="button"
                 onClick={() => handleSendMessage(q)}
                 disabled={isLoading}
-                className={`whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-semibold border transition cursor-pointer ${
-                  isDarkMode
-                    ? "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
-                }`}
+                className="whitespace-nowrap px-3 py-1.5 rounded-full text-[11px] font-bold skeuo-button-metallic transition cursor-pointer"
               >
                 {q}
               </button>
@@ -332,8 +328,8 @@ Ask me anything like:
             }}
             className={`p-3 border-t flex items-center gap-2 ${
               isDarkMode
-                ? "bg-slate-800/60 border-slate-700"
-                : "bg-white border-slate-100"
+                ? "bg-slate-900 border-slate-800"
+                : "bg-slate-50 border-slate-200"
             }`}
           >
             <input
@@ -342,16 +338,12 @@ Ask me anything like:
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               placeholder="Ask about found items or campus locations..."
-              className={`flex-1 px-3.5 py-2.5 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 border ${
-                isDarkMode
-                  ? "bg-slate-900 border-slate-700 text-white placeholder-slate-500"
-                  : "bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400"
-              }`}
+              className="flex-1 px-3.5 py-2.5 rounded-xl text-xs focus:outline-none skeuo-input"
             />
             <button
               type="submit"
               disabled={isLoading || !inputMessage.trim()}
-              className="p-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-xl transition cursor-pointer font-bold text-xs shadow-xs"
+              className="px-3.5 py-2.5 skeuo-button-primary disabled:opacity-40 text-white rounded-xl transition cursor-pointer font-bold text-xs"
               title="Send Message"
             >
               <span>➤</span>

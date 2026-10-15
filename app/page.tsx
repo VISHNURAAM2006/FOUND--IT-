@@ -179,22 +179,22 @@ function ReportCard({
   const isLockedFound = report.type === "FOUND" && !isOwner && report.isLocked !== false;
 
   return (
-    <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 bg-white dark:bg-slate-900 card-hover-effect hover:shadow-lg transition flex flex-col justify-between">
+    <div className="skeuo-card rounded-2xl p-4 card-hover-effect flex flex-col justify-between">
       <div>
         {/* Image Display */}
         {report.imageUrl && !isLockedFound ? (
           <img
             src={report.imageUrl}
             alt={report.title}
-            className="w-full h-36 object-cover rounded-xl mb-3 border border-slate-200 dark:border-slate-700"
+            className="w-full h-36 object-cover rounded-xl mb-3 border border-slate-300/80 dark:border-slate-700 shadow-inner"
           />
         ) : isLockedFound ? (
-          <div className="w-full h-36 rounded-xl mb-3 bg-slate-100 dark:bg-slate-800/80 border border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 p-3 text-center">
-            <span className="text-2xl mb-1">🔒</span>
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+          <div className="w-full h-36 rounded-xl mb-3 skeuo-panel-inset flex flex-col items-center justify-center text-slate-400 p-3 text-center">
+            <span className="text-2xl mb-1 drop-shadow-xs">🔒</span>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
               Details Locked
             </span>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500">
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">
               Answer secret question to unlock
             </span>
           </div>
@@ -203,34 +203,34 @@ function ReportCard({
         {/* Tags */}
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           {report.status === "RETURNED" ? (
-            <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-600 text-white shadow-xs">
+            <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-600 text-white skeuo-badge">
               {report.type === "LOST" ? "✓ RECEIVED BACK" : "✓ RETURNED TO OWNER"}
             </span>
           ) : report.status === "HANDOVER_PENDING" ? (
-            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 skeuo-badge border-amber-300 dark:border-amber-700">
               📦 HANDOVER PENDING
             </span>
           ) : (
             <span
-              className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+              className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full skeuo-badge ${
                 report.type === "LOST"
-                  ? "bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300"
-                  : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
+                  ? "bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300"
+                  : "bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300"
               }`}
             >
               {report.type}
             </span>
           )}
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+          <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-2xs">
             {report.category}
           </span>
           {isOwner && (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 ml-auto">
+            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/70 text-violet-800 dark:text-violet-300 skeuo-badge ml-auto">
               Mine
             </span>
           )}
           {!isOwner && report.type === "FOUND" && !isLockedFound && report.status !== "RETURNED" && (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 ml-auto">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 skeuo-badge ml-auto">
               🔓 Unlocked
             </span>
           )}
@@ -257,14 +257,14 @@ function ReportCard({
 
         {/* Secret Question Teaser */}
         {isLockedFound && report.hiddenQuestion && (
-          <div className="mt-2.5 p-2.5 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200/80 dark:border-amber-900/60 text-[11px] text-amber-900 dark:text-amber-200">
+          <div className="mt-2.5 p-2.5 skeuo-panel-inset rounded-xl text-[11px] text-amber-900 dark:text-amber-200">
             <span className="font-bold">Secret Question:</span> &quot;{report.hiddenQuestion}&quot;
           </div>
         )}
 
         {/* Returned Confirmation Notice */}
         {report.status === "RETURNED" && (
-          <div className="mt-2.5 p-2.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-900 text-xs text-emerald-900 dark:text-emerald-200 font-medium flex items-center gap-1.5">
+          <div className="mt-2.5 p-2.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-900 text-xs text-emerald-900 dark:text-emerald-200 font-medium flex items-center gap-1.5 shadow-2xs">
             <span>✓</span>
             <span className="truncate">
               {report.type === "LOST"
@@ -276,8 +276,8 @@ function ReportCard({
       </div>
 
       {/* Footer / Actions */}
-      <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
-        <div className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center justify-between">
+      <div className="mt-3 pt-3 border-t border-slate-200/80 dark:border-slate-800 space-y-2">
+        <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
           <span>Status: {report.status}</span>
           <span>
             {report.createdAt
@@ -295,7 +295,7 @@ function ReportCard({
           {isOwner && report.type === "LOST" && report.status !== "RETURNED" && onViewAiMatches && (
             <button
               onClick={() => onViewAiMatches(report)}
-              className="text-xs font-bold px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-lg transition shadow-xs flex items-center gap-1.5"
+              className="text-xs font-bold px-3 py-1.5 skeuo-button-primary text-white rounded-xl transition flex items-center gap-1.5 cursor-pointer"
             >
               <span>✨</span>
               <span>AI Matches</span>
@@ -306,7 +306,7 @@ function ReportCard({
           {isOwner && onDelete && (
             <button
               onClick={() => onDelete(report)}
-              className="text-xs font-semibold px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition border border-red-200"
+              className="text-xs font-semibold px-3 py-1.5 skeuo-button-metallic text-red-600 hover:text-red-700 rounded-xl transition cursor-pointer"
             >
               🗑️ Delete
             </button>
@@ -316,7 +316,7 @@ function ReportCard({
           {isLockedFound && onVerify && (
             <button
               onClick={() => onVerify(report)}
-              className="w-full text-xs font-bold px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition shadow-xs flex items-center justify-center gap-1.5"
+              className="w-full text-xs font-bold px-3 py-2.5 skeuo-button-primary text-white rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>🔑</span>
               <span>Answer Question &amp; Unlock</span>
@@ -327,7 +327,7 @@ function ReportCard({
           {!isOwner && report.type === "FOUND" && !isLockedFound && onOpenChat && (
             <button
               onClick={() => onOpenChat(report)}
-              className="w-full text-xs font-bold px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition shadow-xs flex items-center justify-center gap-1.5"
+              className="w-full text-xs font-bold px-3 py-2.5 skeuo-button-emerald text-white rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>💬</span>
               <span>View Details &amp; Chat</span>
@@ -1056,7 +1056,7 @@ export default function HomePage() {
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-lg shadow-sm">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-b from-blue-500 to-blue-700 text-white flex items-center justify-center font-black text-lg border-t border-white/40 border-b-2 border-blue-900 shadow-md">
               F!
             </div>
             <span
@@ -1073,14 +1073,10 @@ export default function HomePage() {
             <button
               type="button"
               onClick={toggleTheme}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                isDarkMode
-                  ? "bg-slate-800 text-amber-300 border-slate-700 hover:bg-slate-700 shadow-xs"
-                  : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 shadow-2xs"
-              }`}
+              className="px-3.5 py-1.5 rounded-xl skeuo-button-metallic text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
               title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
-              <span>{isDarkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}</span>
+              <span>{isDarkMode ? "☀️ Light" : "🌙 Dark"}</span>
             </button>
 
             {/* ── Chat Notification Bar / Bell ── */}
@@ -1088,16 +1084,12 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => setShowNotificationsDropdown((prev) => !prev)}
-                className={`relative p-2 rounded-xl transition flex items-center justify-center cursor-pointer ${
-                  isDarkMode
-                    ? "text-slate-300 hover:text-white hover:bg-slate-800"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                }`}
+                className="relative p-2 rounded-xl skeuo-button-metallic transition flex items-center justify-center cursor-pointer"
                 title="Chat Notifications"
               >
-                <span className="text-xl">🔔</span>
+                <span className="text-lg">🔔</span>
                 {unreadChats.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-violet-600 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-xs">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-b from-violet-500 to-indigo-700 text-white text-[10px] font-black rounded-full flex items-center justify-center border border-white/50 shadow-xs">
                     {unreadChats.length}
                   </span>
                 )}
@@ -1269,7 +1261,7 @@ export default function HomePage() {
             )}
             <button
               onClick={() => signOut()}
-              className="text-xs font-semibold px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition border border-rose-200"
+              className="text-xs font-bold px-3.5 py-1.5 bg-gradient-to-b from-rose-50 to-rose-100 hover:from-rose-100 hover:to-rose-200 text-rose-700 rounded-xl transition border border-rose-200 border-b-2 border-rose-300 shadow-xs active:translate-y-0.5 cursor-pointer"
             >
               Logout
             </button>
@@ -1341,26 +1333,22 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* ── 2 Action Cards ─────────────────────────────────────────────── */}
+        {/* ── 2 Action Cards (Skeuomorphic Materiality) ─────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 animate-slide-up">
           {/* REPORT LOST */}
           <Link
             href="/report-lost"
-            className={`group rounded-3xl p-7 shadow-md border-2 hover:border-blue-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between card-hover-effect ${
-              isDarkMode
-                ? "bg-slate-900 border-slate-800"
-                : "bg-white border-slate-200"
-            }`}
+            className="group rounded-3xl p-7 skeuo-card hover:border-blue-500 transition-all duration-300 flex flex-col justify-between card-hover-effect cursor-pointer"
           >
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform animate-float">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-b from-blue-500 to-blue-700 text-white flex items-center justify-center text-2xl mb-5 group-hover:scale-105 transition-transform shadow-[0_4px_10px_rgba(37,99,235,0.35),_inset_0_1px_0_rgba(255,255,255,0.4)] border-t border-white/30 animate-float">
                 🔍
               </div>
-              <div className="inline-block px-3 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-full mb-2">
+              <div className="inline-block px-3 py-1 skeuo-badge bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 text-xs font-black rounded-full mb-2">
                 Lost an Item?
               </div>
               <h2
-                className={`text-xl font-bold mb-2 group-hover:text-blue-500 transition ${
+                className={`text-xl font-black mb-2 group-hover:text-blue-500 transition ${
                   isDarkMode ? "text-white" : "text-slate-900"
                 }`}
               >
@@ -1374,7 +1362,7 @@ export default function HomePage() {
                 File a lost item complaint with details, campus location, contact info, and a photo.
               </p>
             </div>
-            <div className="flex items-center gap-2 font-bold text-blue-500 text-sm mt-5 group-hover:translate-x-1.5 transition-transform">
+            <div className="inline-flex items-center gap-2 font-black skeuo-button-primary text-white text-xs px-4 py-2.5 rounded-xl mt-6 group-hover:translate-x-1 transition-transform w-fit cursor-pointer">
               <span>File Lost Report</span>
               <span>→</span>
             </div>
@@ -1383,21 +1371,17 @@ export default function HomePage() {
           {/* REPORT FOUND */}
           <Link
             href="/report-found"
-            className={`group rounded-3xl p-7 shadow-md border-2 hover:border-emerald-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between card-hover-effect ${
-              isDarkMode
-                ? "bg-slate-900 border-slate-800"
-                : "bg-white border-slate-200"
-            }`}
+            className="group rounded-3xl p-7 skeuo-card hover:border-emerald-500 transition-all duration-300 flex flex-col justify-between card-hover-effect cursor-pointer"
           >
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform animate-float-delayed">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-b from-emerald-500 to-emerald-700 text-white flex items-center justify-center text-2xl mb-5 group-hover:scale-105 transition-transform shadow-[0_4px_10px_rgba(5,150,105,0.35),_inset_0_1px_0_rgba(255,255,255,0.4)] border-t border-white/30 animate-float-delayed">
                 🎁
               </div>
-              <div className="inline-block px-3 py-0.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-full mb-2">
+              <div className="inline-block px-3 py-1 skeuo-badge bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-xs font-black rounded-full mb-2">
                 Found an Item?
               </div>
               <h2
-                className={`text-xl font-bold mb-2 group-hover:text-emerald-500 transition ${
+                className={`text-xl font-black mb-2 group-hover:text-emerald-500 transition ${
                   isDarkMode ? "text-white" : "text-slate-900"
                 }`}
               >
@@ -1411,117 +1395,79 @@ export default function HomePage() {
                 Found something on campus? Post a photo, location, and a confidential security question.
               </p>
             </div>
-            <div className="flex items-center gap-2 font-bold text-emerald-500 text-sm mt-5 group-hover:translate-x-1.5 transition-transform">
+            <div className="inline-flex items-center gap-2 font-black skeuo-button-emerald text-white text-xs px-4 py-2.5 rounded-xl mt-6 group-hover:translate-x-1 transition-transform w-fit cursor-pointer">
               <span>Submit Found Report</span>
               <span>→</span>
             </div>
           </Link>
         </div>
 
-        {/* ── Tabbed Section ─────────────────────────────────────────────── */}
-        <section
-          className={`rounded-3xl shadow-md border overflow-hidden transition-colors ${
-            isDarkMode
-              ? "bg-slate-900 border-slate-800"
-              : "bg-white border-slate-200"
-          }`}
-        >
-          {/* Tab Header */}
-          <div
-            className={`flex border-b ${
-              isDarkMode ? "border-slate-800" : "border-slate-200"
-            }`}
-          >
-            <button
-              onClick={() => setActiveTab("my")}
-              className={`flex-1 py-4 text-sm font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === "my"
-                  ? isDarkMode
-                    ? "bg-slate-900 text-white border-b-2 border-blue-500"
-                    : "bg-white text-slate-900 border-b-2 border-blue-600"
-                  : isDarkMode
-                  ? "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-              }`}
-            >
-              <span>📋</span>
-              <span>My Reports</span>
-              {myReports.length > 0 && (
-                <span
-                  className={`ml-1 text-xs px-2 py-0.5 rounded-full font-semibold ${
-                    isDarkMode
-                      ? "bg-slate-800 text-slate-300"
-                      : "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  {myReports.length}
-                </span>
-              )}
-            </button>
+        {/* ── Tabbed Section (Tactile Recessed Tray) ─────────────────────────── */}
+        <section className="rounded-3xl skeuo-card overflow-hidden transition-colors mb-12">
+          {/* Tab Header Tray */}
+          <div className="p-3 sm:p-4 border-b border-slate-200/80 dark:border-slate-800/80">
+            <div className="skeuo-panel-inset p-1.5 rounded-2xl flex flex-col sm:flex-row gap-1.5 sm:gap-2">
+              <button
+                onClick={() => setActiveTab("my")}
+                className={`flex-1 py-3 px-4 text-xs sm:text-sm font-black transition flex items-center justify-center gap-2 cursor-pointer rounded-xl ${
+                  activeTab === "my"
+                    ? "skeuo-card text-blue-600 dark:text-blue-400 shadow-sm"
+                    : isDarkMode
+                    ? "text-slate-400 hover:text-slate-200"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <span>📋</span>
+                <span>My Reports</span>
+                {myReports.length > 0 && (
+                  <span className="ml-1 text-[11px] px-2 py-0.5 rounded-full font-black skeuo-badge bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300">
+                    {myReports.length}
+                  </span>
+                )}
+              </button>
 
-            <button
-              onClick={() => setActiveTab("inventory")}
-              className={`flex-1 py-4 text-sm font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === "inventory"
-                  ? isDarkMode
-                    ? "bg-slate-900 text-white border-b-2 border-emerald-500"
-                    : "bg-white text-slate-900 border-b-2 border-emerald-600"
-                  : isDarkMode
-                  ? "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-              }`}
-            >
-              <span>{hasLostReport ? "🎁" : "🔒"}</span>
-              <span>Found Inventory</span>
-              {hasLostReport && foundInventory.length > 0 ? (
-                <span
-                  className={`ml-1 text-xs px-2 py-0.5 rounded-full font-semibold ${
-                    isDarkMode
-                      ? "bg-emerald-950/60 text-emerald-300 border border-emerald-800"
-                      : "bg-emerald-100 text-emerald-700"
-                  }`}
-                >
-                  {foundInventory.length}
-                </span>
-              ) : !hasLostReport ? (
-                <span
-                  className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                    isDarkMode
-                      ? "bg-amber-950/60 text-amber-300 border border-amber-800"
-                      : "bg-amber-100 text-amber-800"
-                  }`}
-                >
-                  Restricted
-                </span>
-              ) : null}
-            </button>
+              <button
+                onClick={() => setActiveTab("inventory")}
+                className={`flex-1 py-3 px-4 text-xs sm:text-sm font-black transition flex items-center justify-center gap-2 cursor-pointer rounded-xl ${
+                  activeTab === "inventory"
+                    ? "skeuo-card text-emerald-600 dark:text-emerald-400 shadow-sm"
+                    : isDarkMode
+                    ? "text-slate-400 hover:text-slate-200"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <span>{hasLostReport ? "🎁" : "🔒"}</span>
+                <span>Found Inventory</span>
+                {hasLostReport && foundInventory.length > 0 ? (
+                  <span className="ml-1 text-[11px] px-2 py-0.5 rounded-full font-black skeuo-badge bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
+                    {foundInventory.length}
+                  </span>
+                ) : !hasLostReport ? (
+                  <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full font-bold skeuo-badge bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300">
+                    Restricted
+                  </span>
+                ) : null}
+              </button>
 
-            <button
-              onClick={() => setActiveTab("chats")}
-              className={`flex-1 py-4 text-sm font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                activeTab === "chats"
-                  ? isDarkMode
-                    ? "bg-slate-900 text-white border-b-2 border-violet-500"
-                    : "bg-white text-slate-900 border-b-2 border-violet-600"
-                  : isDarkMode
-                  ? "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-              }`}
-            >
-              <span>💬</span>
-              <span>Campus Chats</span>
-              {userChats.length > 0 && (
-                <span
-                  className={`ml-1 text-xs px-2 py-0.5 rounded-full font-semibold ${
-                    isDarkMode
-                      ? "bg-violet-950/60 text-violet-300 border border-violet-800"
-                      : "bg-violet-100 text-violet-700"
-                  }`}
-                >
-                  {userChats.length}
-                </span>
-              )}
-            </button>
+              <button
+                onClick={() => setActiveTab("chats")}
+                className={`flex-1 py-3 px-4 text-xs sm:text-sm font-black transition flex items-center justify-center gap-2 cursor-pointer rounded-xl ${
+                  activeTab === "chats"
+                    ? "skeuo-card text-violet-600 dark:text-violet-400 shadow-sm"
+                    : isDarkMode
+                    ? "text-slate-400 hover:text-slate-200"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <span>💬</span>
+                <span>Campus Chats</span>
+                {userChats.length > 0 && (
+                  <span className="ml-1 text-[11px] px-2 py-0.5 rounded-full font-black skeuo-badge bg-violet-100 dark:bg-violet-950/70 text-violet-800 dark:text-violet-300">
+                    {userChats.length}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="p-6 sm:p-8">
