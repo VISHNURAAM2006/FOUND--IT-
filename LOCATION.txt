@@ -1,0 +1,208 @@
+Civil Engineering 
+
+Opposite to Library
+left side Admin block
+right side Eee block
+
+Labs
+Structural Laboratory (Ground Floor Left Side)
+Hydraulics Engineering Laboratory
+CADD Center
+Strength of Materials Laboratory
+Geotechnical Engineering Laboratory
+Environmental Engineering Laboratory
+Concrete Laboratory
+Highways Laboratory
+Survey Laboratory
+
+EEE
+
+Opposite to Computer Block
+Left side ECE 
+right side Civil
+back Canteen
+
+Electrical Machines Laboratory
+Measurements and Controls lab
+Power Electronics and Drives lab
+Electrical Workshop
+Applied Electronics Lab
+Computer Laboratory
+Embedded Systems lab
+Automation & Research lab 
+Motor Rewinding Section
+Project Lab
+Model Room
+Renewable Energy Laboratory 
+CALIBRATION LAB
+
+
+ece
+
+left side Industrial Safety
+right side ee block
+back side workshop
+
+
+labs
+PG VLSI Laboratory
+Electronics Laboratory (ground floor)
+Digital & Instrumentation Laboratory
+Microprocessor Laboratory
+Communication Laboratory
+Signal Processing Laboratory
+Advanced Communication Laboratory
+VLSI Laboratory
+Networks Laboratory
+Computing Facilities
+Embedded Systems Laboratory
+PCB Laboratory
+
+CSE
+
+left side of library
+right side mechanical block
+back side Ai&Ds Block
+
+
+Von Neuman Computing Center
+Visual Programming Lab
+Cognizant Innovation Lab
+Post Graduate Lab
+Ada Lovelace Lab
+George Boole Lab
+Network Lab (First Floor)
+Charles Babbage Lab
+Digital and Microprocessor Lab
+Research Laboratory
+
+Science and Humanities – Computer Laboratory-I
+Science and Humanities – Computer Laboratory-II
+
+
+Mech
+
+left side CSE Block
+Opposite la Industrial Safety
+
+CAD Laboratory
+CAM Laboratory
+Mechatronics Laboratory
+IC Engines Laboratory
+Safety Engineering Laboratory
+Machine Shop
+Steam lab
+Fluid Mechanics lab
+Heat transfer and Refrigerationlab
+Instrumentation & Dynamics lab
+Metrology lab
+Model Room
+
+IT
+Inside CSE block
+
+Software Development Lab
+Multimedia Lab
+Research Lab
+System Software Lab
+Devapps Lab
+
+Biotech
+
+Opposite to Architecture Department
+
+Biochemistry Laboratory
+Bioinformatics Laboratory
+Bioprocess Laboratory
+Chemical Engineering Laboratory
+Gene Expression Laboratory
+Microbiology Laboratory
+Down Stream Processing Laboratory
+Animal Tissue Culture Laboratory
+Plant Tissue Culture Laboratory
+Animal House Facility
+
+
+AIDS
+
+Backside Cse Block
+
+Deep Learning Lab (First floor)
+Data Science Lab (Ground Floor)
+Gen-AI Lab (Ground)
+Machine Learning Lab (First Floor)
+
+BioMedical
+Inside EEE And ECE Block
+
+HUMAN PHYSIOLOGY LABORATORY
+BIOMEDICAL SENSORS AND INSTRUMENTATION LABORATORY
+MEDICAL INFORMATICS LABORATORY
+BIOMEDICAL SIGNAL PROCESSING LABORATORY
+DIAGNOSTIC AND THERAPEUTIC EQUIPMENT LABORATORY
+BIOMECHANICS LABORATORY
+
+School of Architecture
+
+
+Left side Biotech
+
+Climatology Lab
+Computer Lab
+Acoustic and Lighting Lab
+Carpentry and Model Making Lab
+Art Gallery
+Construction Yard
+
+MCA
+Backside  Architecture
+
+MCA Lab
+
+MBA
+
+MBA COmputer Laoratory
+
+S&H
+
+opposite canteed
+left side eee block
+left side civil block 
+
+English (ground Floor)
+
+JOACHIM VON SCHLENK LANGUAGE LAB Ground Floor
+Audio Visual Laboratory Ground Floor
+
+Maths (Third Floor)
+
+Maths lab third floor
+
+Physics (third floor)
+
+Physics Lab 3rd floor
+Physics Research Centre 3rd Floor
+
+Chemistry (2nd Floor)
+
+ Chemistry Laboratory (2nd floor)
+
+Canteen Student Amentiies Centee
+
+first floor food for boys day scholar
+left side la tmb atm office
+
+MCC
+Entry Gate
+left side library 
+opposite la Administrative block
+
+Administrativc Block
+opposite la MCC
+left side civil block
+
+
+
+
+
+

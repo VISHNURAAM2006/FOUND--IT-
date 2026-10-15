@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     const ranked = rankMatchingFoundReports(
       lostReport as ReportLike,
       foundReports as ReportLike[],
-      0.30
+      0.75
     );
 
     // Sanitize sensitive answer
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
     const ranked = rankMatchingFoundReports(
       lostObj,
       foundReports as ReportLike[],
-      0.30
+      0.75
     );
 
     const sanitized = ranked.map((match) => {

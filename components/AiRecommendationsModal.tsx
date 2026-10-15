@@ -66,12 +66,12 @@ export default function AiRecommendationsModal({
                 <h3 className="text-lg font-bold text-slate-900">
                   AI Match Recommendations
                 </h3>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-violet-200/80 text-violet-800">
-                  Vision + NLP
+                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  Score ≥ 75% Only
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                Matches found in campus inventory for: &quot;
+                Filtered matches (Category &amp; Product Name score &ge; 75%) for: &quot;
                 <strong className="text-slate-800">{lostReport?.title}</strong>&quot;
               </p>
             </div>
@@ -93,7 +93,7 @@ export default function AiRecommendationsModal({
                 Scanning found items inventory...
               </p>
               <p className="text-xs text-slate-400 mt-1">
-                Comparing visual shape, color histograms, and description semantics
+                Evaluating Category, Product Name, and visual appearance with &ge; 75% threshold
               </p>
             </div>
           ) : error ? (
@@ -106,11 +106,11 @@ export default function AiRecommendationsModal({
                 🔍
               </div>
               <h4 className="text-base font-bold text-slate-800 mb-1">
-                No Potential Matches Yet
+                No High-Confidence Matches (≥ 75%)
               </h4>
               <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                None of the currently available found products match the visual features or description of your lost report.
-                When someone reports a matching item, it will automatically appear here!
+                Currently, no found product meets the required 75%+ AI confidence threshold based on Category and Product Name.
+                Only matches that score 75% or higher are displayed to ensure accuracy and prevent false claims.
               </p>
             </div>
           ) : (

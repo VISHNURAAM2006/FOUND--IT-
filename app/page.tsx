@@ -6,6 +6,7 @@ import Link from "next/link";
 import VerificationModal from "@/components/VerificationModal";
 import ProductChatWorkspace from "@/components/ProductChatWorkspace";
 import AiRecommendationsModal from "@/components/AiRecommendationsModal";
+import CampusAiChatWidget from "@/components/CampusAiChatWidget";
 import { playNotificationChime } from "@/lib/notification";
 
 interface Report {
@@ -1022,6 +1023,14 @@ export default function HomePage() {
           }}
         />
       )}
+
+      {/* Campus AI Chatbot Assistant for Claimants / Students */}
+      <CampusAiChatWidget
+        userEmail={session.user?.email || ""}
+        userName={session.user?.name || "Student"}
+        isDarkMode={isDarkMode}
+        onOpenInventory={() => setActiveTab("inventory")}
+      />
 
       {/* Toast Notification */}
       {toast && (

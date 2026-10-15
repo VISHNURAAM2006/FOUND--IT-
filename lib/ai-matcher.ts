@@ -216,37 +216,90 @@ function extractColors(text: string): string[] {
 /**
  * Computes semantic text and metadata similarity.
  */
+/**
+ * Computes title and product name semantic similarity.
+ */
+function computeTitleSimilarity(titleA: string, titleB: string): { score: number; reason?: string } {
+  const normA = normalizeText(titleA || "");
+  const normB = normalizeText(titleB || "");
+
+  if (!normA || !normB) return { score: 0 };
+  if (normA === normB) return { score: 1.0, reason: `Exact Product Name Match ("${titleA}")` };
+
+  // Substring containment check
+  if (normA.includes(normB) || normB.includes(normA)) {
+    return { score: 0.90, reason: `Direct Product Name Match ("${titleA}" ~ "${titleB}")` };
+  }
+
+  // Tokenize and expand with synonyms
+  const wordsA = expandWithSynonyms(normA);
+  const wordsB = expandWithSynonyms(normB);
+
+  const setA = new Set(wordsA);
+  const setB = new Set(wordsB);
+
+  let intersectionCount = 0;
+  for (const w of setA) {
+    if (setB.has(w)) intersectionCount++;
+  }
+
+  const unionSize = new Set([...wordsA, ...wordsB]).size;
+  const jaccard = unionSize > 0 ? intersectionCount / unionSize : 0;
+
+  // Jaro-Winkler string similarity on full title string
+  const jaro = jaroWinklerSimilarity(normA, normB);
+
+  // Fused title score
+  const score = Math.max(jaccard, jaro);
+
+  let reason: string | undefined;
+  if (score >= 0.75) {
+    reason = `Matching Product Name (${Math.round(score * 100)}% keyword match: "${titleA}" ~ "${titleB}")`;
+  }
+
+  return { score, reason };
+}
+
+/**
+ * Computes semantic text and metadata similarity.
+ * Prioritizes Category (35%) and Product Name (35%), followed by Brand/Model (10%), Color (10%), and Description/Location (10%).
+ */
 export function computeTextMetadataSimilarity(
   lost: ReportLike,
   found: ReportLike
 ): { score: number; percentage: number; reasons: string[] } {
   const reasons: string[] = [];
   let categoryScore = 0;
+  let titleScore = 0;
   let brandScore = 0;
   let colorScore = 0;
-  let textSemanticScore = 0;
+  let otherScore = 0;
 
-  // 1. Category Matching
+  // 1. Primary Feature 1: Category Matching (35% weight)
   const catLost = (lost.category || "").trim().toLowerCase();
   const catFound = (found.category || "").trim().toLowerCase();
 
   if (catLost && catFound) {
     if (catLost === catFound) {
       categoryScore = 1.0;
-      reasons.push(`📁 Category: Same category (${lost.category})`);
+      reasons.push(`📁 Exact Category Match: ${lost.category}`);
+    } else if (catLost === "other" || catFound === "other") {
+      categoryScore = 0.3;
     } else {
-      // Related categories or other
-      if (catLost === "other" || catFound === "other") {
-        categoryScore = 0.5;
-      } else {
-        categoryScore = 0.1; // incompatible categories
-      }
+      categoryScore = 0.0; // Incompatible categories
     }
   } else {
     categoryScore = 0.5;
   }
 
-  // 2. Brand & Model Matching
+  // 2. Primary Feature 2: Product Name / Title Matching (35% weight)
+  const titleRes = computeTitleSimilarity(lost.title || "", found.title || "");
+  titleScore = titleRes.score;
+  if (titleRes.reason) {
+    reasons.push(`🏷️ ${titleRes.reason}`);
+  }
+
+  // 3. Secondary Feature: Brand & Model Matching (10% weight)
   const brandLost = normalizeText(lost.brand || "");
   const brandFound = normalizeText(found.brand || "");
   const modelLost = normalizeText(lost.model || "");
@@ -255,7 +308,7 @@ export function computeTextMetadataSimilarity(
   if (brandLost && brandFound) {
     if (brandLost === brandFound) {
       brandScore = 1.0;
-      reasons.push(`🏷️ Exact Brand Match: "${lost.brand}"`);
+      reasons.push(`🏷️ Brand Match: "${lost.brand}"`);
     } else {
       const brandJaro = jaroWinklerSimilarity(brandLost, brandFound);
       if (brandJaro >= 0.8) {
@@ -272,7 +325,7 @@ export function computeTextMetadataSimilarity(
     }
   }
 
-  // 3. Color Matching
+  // 4. Secondary Feature: Color Matching (10% weight)
   const lostColors = [
     ...extractColors(lost.color || ""),
     ...extractColors(lost.title || ""),
@@ -297,42 +350,43 @@ export function computeTextMetadataSimilarity(
     }
   }
 
-  // 4. Semantic Title & Description Matching (Cosine + Soft-Tokens)
-  const fullTextLost = `${lost.title || ""} ${lost.brand || ""} ${lost.model || ""} ${lost.description || ""}`;
-  const fullTextFound = `${found.title || ""} ${found.brand || ""} ${found.model || ""} ${found.description || ""}`;
-
-  const expandedLost = expandWithSynonyms(fullTextLost).join(" ");
-  const expandedFound = expandWithSynonyms(fullTextFound).join(" ");
-
-  const textSim = computeAnswerSimilarity(expandedLost, expandedFound);
-  textSemanticScore = textSim.score;
-
-  if (textSemanticScore >= 0.4) {
-    reasons.push(`📝 Description & Keyword Similarity: ${Math.round(textSemanticScore * 100)}%`);
+  // 5. Secondary Feature: Description Details & Location Proximity (10% weight)
+  const fullDescLost = `${lost.description || ""}`;
+  const fullDescFound = `${found.description || ""}`;
+  if (fullDescLost && fullDescFound) {
+    const textSim = computeAnswerSimilarity(
+      expandWithSynonyms(fullDescLost).join(" "),
+      expandWithSynonyms(fullDescFound).join(" ")
+    );
+    if (textSim.score >= 0.35) {
+      otherScore += textSim.score * 0.7;
+      reasons.push(`📝 Description Details Overlap: ${Math.round(textSim.score * 100)}%`);
+    }
   }
 
-  // 5. Location Proximity (Bonus)
   if (lost.location && found.location) {
     const locLost = normalizeText(lost.location);
     const locFound = normalizeText(found.location);
     if (locLost && locFound) {
       if (locLost === locFound || locLost.includes(locFound) || locFound.includes(locLost)) {
         reasons.push(`📍 Matching Location: "${lost.location}"`);
-        categoryScore = Math.min(1.0, categoryScore + 0.1);
+        otherScore = Math.min(1.0, otherScore + 0.5);
       }
     }
   }
 
-  // Weighted Combination for Text & Metadata
+  // Weighted Combination: Mainly Category (35%) & Product Name (35%) + Brand (10%) + Color (10%) + Others (10%)
   let score =
-    0.30 * categoryScore +
-    0.25 * brandScore +
-    0.15 * colorScore +
-    0.30 * textSemanticScore;
+    0.35 * categoryScore +
+    0.35 * titleScore +
+    0.10 * brandScore +
+    0.10 * colorScore +
+    0.10 * Math.min(1.0, otherScore);
 
-  // Category mismatch penalty
-  if (categoryScore < 0.3) {
-    score *= 0.4;
+  // STRICT CATEGORY BARRIER:
+  // If the product category does not match, the item must NEVER exceed 75%
+  if (categoryScore < 0.5) {
+    score = Math.min(score, 0.35);
   }
 
   score = Math.max(0, Math.min(1, score));
@@ -352,7 +406,7 @@ export function computeReportSimilarity(
 ): MatchResult {
   const allReasons: string[] = [];
 
-  // 1. Text & Metadata Similarity
+  // 1. Text & Metadata Similarity (Category + Product Name prioritized)
   const textRes = computeTextMetadataSimilarity(lost, found);
   allReasons.push(...textRes.reasons);
 
@@ -360,7 +414,6 @@ export function computeReportSimilarity(
   let visualScore: number | null = null;
   let visualPercentage: number | null = null;
 
-  // Retrieve or compute visual features for lost report
   let vfLost = lost.visualFeatures;
   if (!vfLost && lost.imageUrl && lost.imageUrl.startsWith("data:image/")) {
     try {
@@ -370,7 +423,6 @@ export function computeReportSimilarity(
     }
   }
 
-  // Retrieve or compute visual features for found report
   let vfFound = found.visualFeatures;
   if (!vfFound && found.imageUrl && found.imageUrl.startsWith("data:image/")) {
     try {
@@ -385,33 +437,33 @@ export function computeReportSimilarity(
     visualScore = vRes.score;
     visualPercentage = vRes.percentage;
 
-    if (vRes.percentage >= 60) {
+    if (vRes.percentage >= 70) {
       allReasons.unshift(`📸 High Visual Match: ${vRes.percentage}% appearance similarity`);
-    } else if (vRes.percentage >= 40) {
+    } else if (vRes.percentage >= 45) {
       allReasons.push(`📸 Visual Similarity: ${vRes.percentage}% (${vRes.details})`);
     }
   }
 
-  // 3. Fused Multi-Modal Score
+  // 3. Fused Multi-Modal Score:
+  // Text (Category + Product Name + Features) remains the primary driver (65%), with Visual confirming (35%).
   let totalScore = 0;
   if (visualScore !== null) {
-    // 50% Vision + 50% Text
-    totalScore = 0.50 * visualScore + 0.50 * textRes.score;
-    // Boost if visual is exceptionally high and category matches
-    if (visualScore >= 0.85 && textRes.score >= 0.5) {
-      totalScore = Math.min(1.0, totalScore + 0.08);
+    totalScore = 0.65 * textRes.score + 0.35 * visualScore;
+    // Category mismatch clamp: visual similarity cannot bypass mismatched categories
+    if (textRes.score < 0.40) {
+      totalScore = Math.min(totalScore, 0.40);
     }
   } else {
-    // 100% Text & Metadata if one or both images are absent
+    // 100% Text & Metadata if images are absent
     totalScore = textRes.score;
   }
 
   const percentage = Math.round(totalScore * 100);
 
   let matchLevel: "HIGH" | "MODERATE" | "LOW" = "LOW";
-  if (percentage >= 70) {
+  if (percentage >= 75) {
     matchLevel = "HIGH";
-  } else if (percentage >= 45) {
+  } else if (percentage >= 50) {
     matchLevel = "MODERATE";
   }
 
@@ -430,11 +482,12 @@ export function computeReportSimilarity(
 
 /**
  * Finds and ranks matching found reports for a given lost report.
+ * Filters strictly: Shows IF AND ONLY IF score >= 75% (0.75).
  */
 export function rankMatchingFoundReports(
   lostReport: ReportLike,
   foundReports: ReportLike[],
-  minScore = 0.35
+  minScore = 0.75
 ): MatchResult[] {
   const matches: MatchResult[] = [];
 
@@ -443,6 +496,7 @@ export function rankMatchingFoundReports(
     if (found.status === "RETURNED") continue;
 
     const res = computeReportSimilarity(lostReport, found);
+    // Strict threshold: score must be >= 75% (0.75)
     if (res.totalScore >= minScore) {
       matches.push(res);
     }
